@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\ApiException;
+use App\Exceptions\ApiExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,4 +22,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Domain errors (e.g. a bid that is too low) are expected outcomes, not faults.
+        $exceptions->dontReport(ApiException::class);
+
+        // One error shape for every API error.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return ApiExceptionRenderer::render($e);
+            }
+        });
     })->create();
