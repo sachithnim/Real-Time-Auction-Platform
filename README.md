@@ -54,9 +54,23 @@ cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
-php artisan migrate
+php artisan migrate --seed   # schema + demo data
 php artisan serve            # http://localhost:8000
 ```
+
+`php artisan migrate:fresh --seed` rebuilds the database from scratch at any time.
+
+#### Demo accounts
+
+All demo accounts use the password `password` (local development only).
+
+| Role   | Email                                          |
+|--------|------------------------------------------------|
+| Admin  | `admin@auction.test`                           |
+| Bidder | `bidder1@auction.test` … `bidder5@auction.test` |
+
+The seeders also create the bid increment tiers and one demo auction in each lifecycle state
+(draft, scheduled, live, completed).
 
 ### 3. Frontend
 
@@ -80,6 +94,13 @@ cd frontend && npm run typecheck && npm run lint && npm test -- --run
 Backend tests deliberately use MySQL: the bid engine relies on `SELECT ... FOR UPDATE` row locks, which
 SQLite does not support, so locking tests on SQLite would prove nothing. A guard test
 (`tests/Feature/TestDatabaseTest.php`) fails if the suite is ever pointed at another database.
+
+## Authentication
+
+The SPA uses Laravel Sanctum's cookie-based session authentication, not bearer tokens, so no token is
+ever stored in browser JavaScript. The browser first calls `GET /sanctum/csrf-cookie`, then
+`POST /api/auth/login` or `POST /api/auth/register`. CORS allows credentialed requests only from
+`FRONTEND_URL`. Self-registration always creates a bidder account; the admin account is seeded.
 
 ## Technical decisions
 
