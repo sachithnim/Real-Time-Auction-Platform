@@ -76,6 +76,8 @@ class ApiExceptionRenderer
             403 => [ErrorCode::Forbidden, 'You are not allowed to do this.'],
             404 => [ErrorCode::NotFound, 'The requested resource was not found.'],
             405 => [ErrorCode::MethodNotAllowed, 'This HTTP method is not supported for this endpoint.'],
+            // Expired/missing XSRF token: the SPA re-fetches /sanctum/csrf-cookie and retries.
+            419 => [ErrorCode::CsrfTokenMismatch, 'Your session token expired. Please retry.'],
             429 => [ErrorCode::TooManyRequests, 'Too many requests. Please slow down.'],
             default => [null, null],
         };

@@ -14,6 +14,7 @@ enum ErrorCode: string
     case Forbidden = 'FORBIDDEN';
     case NotFound = 'NOT_FOUND';
     case MethodNotAllowed = 'METHOD_NOT_ALLOWED';
+    case CsrfTokenMismatch = 'CSRF_TOKEN_MISMATCH';
     case TooManyRequests = 'TOO_MANY_REQUESTS';
     case ServerError = 'SERVER_ERROR';
 
@@ -56,6 +57,7 @@ enum ErrorCode: string
             self::Forbidden => 403,
             self::NotFound, self::AuctionNotFound => 404,
             self::MethodNotAllowed => 405,
+            self::CsrfTokenMismatch => 419,
             self::TooManyRequests => 429,
             self::ServerError => 500,
         };

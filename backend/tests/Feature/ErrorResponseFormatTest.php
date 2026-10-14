@@ -27,6 +27,7 @@ class ErrorResponseFormatTest extends TestCase
             Route::get('auth', fn () => 'secret')->middleware('auth:sanctum');
             Route::get('gate', fn () => Gate::authorize('never'));
             Route::get('throttled', fn () => throw new ThrottleRequestsException('', null, ['Retry-After' => 30]));
+            Route::get('csrf', fn () => abort(419, 'CSRF token mismatch.'));
             Route::get('crash', fn () => throw new RuntimeException('database password is hunter2'));
         });
 
@@ -84,6 +85,11 @@ class ErrorResponseFormatTest extends TestCase
         $this->assertErrorShape($response, 429, 'TOO_MANY_REQUESTS');
         $response->assertJsonPath('error.details.retry_after', 30)
             ->assertHeader('Retry-After', 30);
+    }
+
+    public function test_csrf_token_mismatch_returns_a_specific_code(): void
+    {
+        $this->assertErrorShape($this->getJson('/api/_test/csrf'), 419, 'CSRF_TOKEN_MISMATCH');
     }
 
     public function test_unexpected_errors_do_not_leak_internals_in_production(): void
