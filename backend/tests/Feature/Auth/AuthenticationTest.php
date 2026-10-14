@@ -1,0 +1,152 @@
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Enums\UserRole;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AuthenticationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Requests from the SPA origin get session (stateful) authentication.
+        $this->withHeader('Origin', 'http://localhost:5173');
+    }
+
+    public function test_user_can_register_and_is_logged_in_as_a_bidder(): void
+    {
+        $response = $this->postJson('/api/auth/register', [
+            'name' => 'Asha Perera',
+            'email' => 'asha@example.com',
+            'password' => 'secret-pass',
+            'password_confirmation' => 'secret-pass',
+        ]);
+
+        $response->assertCreated()
+            ->assertExactJson(['data' => [
+                'id' => $response->json('data.id'),
+                'name' => 'Asha Perera',
+                'email' => 'asha@example.com',
+                'role' => 'BIDDER',
+            ]]);
+
+        $user = User::where('email', 'asha@example.com')->firstOrFail();
+        $this->assertSame(UserRole::Bidder, $user->role);
+        $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_registration_cannot_choose_the_admin_role(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'name' => 'Mallory',
+            'email' => 'mallory@example.com',
+            'password' => 'secret-pass',
+            'password_confirmation' => 'secret-pass',
+            'role' => 'ADMIN',
+        ])->assertCreated()->assertJsonPath('data.role', 'BIDDER');
+    }
+
+    public function test_registration_validates_input(): void
+    {
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $this->postJson('/api/auth/register', [
+            'name' => '',
+            'email' => 'taken@example.com',
+            'password' => 'short',
+            'password_confirmation' => 'different',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'VALIDATION_FAILED')
+            ->assertJsonStructure(['error' => ['details' => ['errors' => ['name', 'email', 'password']]]]);
+
+        $this->assertGuest('web');
+    }
+
+    public function test_user_can_log_in_with_valid_credentials(): void
+    {
+        $user = User::factory()->create(['email' => 'bidder@example.com']);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'bidder@example.com',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonMissingPath('data.password');
+
+        $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_wrong_password_and_unknown_email_get_the_same_error(): void
+    {
+        User::factory()->create(['email' => 'bidder@example.com']);
+
+        $wrongPassword = $this->postJson('/api/auth/login', [
+            'email' => 'bidder@example.com',
+            'password' => 'wrong-password',
+        ]);
+        $unknownEmail = $this->postJson('/api/auth/login', [
+            'email' => 'nobody@example.com',
+            'password' => 'password',
+        ]);
+
+        $wrongPassword->assertUnprocessable()->assertJsonPath('error.code', 'VALIDATION_FAILED');
+        $this->assertSame($wrongPassword->json('error'), $unknownEmail->json('error'));
+        $this->assertGuest('web');
+    }
+
+    public function test_current_user_endpoint_returns_the_logged_in_user(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', $admin->id)
+            ->assertJsonPath('data.role', 'ADMIN');
+    }
+
+    public function test_current_user_endpoint_requires_authentication(): void
+    {
+        $this->getJson('/api/auth/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('error.code', 'UNAUTHENTICATED');
+    }
+
+    public function test_user_can_log_out(): void
+    {
+        $this->actingAs(User::factory()->create(), 'web')
+            ->postJson('/api/auth/logout')
+            ->assertNoContent();
+
+        $this->assertGuest('web');
+    }
+
+    public function test_login_is_rate_limited_per_email(): void
+    {
+        User::factory()->create(['email' => 'bidder@example.com']);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/auth/login', [
+                'email' => 'bidder@example.com',
+                'password' => 'wrong-password',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'bidder@example.com',
+            'password' => 'password',
+        ])
+            ->assertTooManyRequests()
+            ->assertJsonPath('error.code', 'TOO_MANY_REQUESTS');
+
+        $this->assertGuest('web');
+    }
+}

@@ -17,7 +17,7 @@ class SpaConfigurationTest extends TestCase
 
     public function test_cors_allows_credentialed_requests_from_the_frontend_origin(): void
     {
-        $this->call('OPTIONS', '/api/user', server: [
+        $this->call('OPTIONS', '/api/auth/login', server: [
             'HTTP_ORIGIN' => self::FRONTEND,
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
         ])
@@ -27,7 +27,7 @@ class SpaConfigurationTest extends TestCase
 
     public function test_cors_rejects_unknown_origins(): void
     {
-        $response = $this->call('OPTIONS', '/api/user', server: [
+        $response = $this->call('OPTIONS', '/api/auth/login', server: [
             'HTTP_ORIGIN' => 'http://evil.example',
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
         ]);
