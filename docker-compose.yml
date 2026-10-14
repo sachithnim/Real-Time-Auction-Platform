@@ -1,0 +1,34 @@
+# Local development infrastructure.
+# PHP and Node run natively during development; the full stack
+# (app, queue worker, scheduler, reverb, frontend) is added later.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: auction
+      MYSQL_USER: auction
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+      TZ: UTC
+    command: ["--default-time-zone=+00:00"]
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  mysql-data:
