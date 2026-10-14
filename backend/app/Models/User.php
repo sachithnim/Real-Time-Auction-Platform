@@ -19,6 +19,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Mirrors the column default so a freshly created model has its role in memory.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'role' => 'BIDDER',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
