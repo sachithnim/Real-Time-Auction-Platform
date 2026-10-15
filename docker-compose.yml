@@ -3,6 +3,7 @@
 #   Frontend  http://localhost:5173
 #   Mailpit   http://localhost:8025
 #   MySQL     127.0.0.1:3307 (for database GUI tools)
+#   queue + scheduler run auction start/close jobs and sweeps in the background
 services:
   mysql:
     image: mysql:8.4
@@ -67,6 +68,42 @@ services:
       timeout: 5s
       start_period: 60s
       retries: 10
+
+  # Runs queued jobs: delayed auction start and close jobs.
+  queue:
+    build: ./docker/php
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      MAIL_HOST: mailpit
+      SKIP_BOOTSTRAP: 1
+    command: ["php", "artisan", "queue:work", "--tries=5", "--sleep=1"]
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Runs the scheduler: start/close safety sweeps and housekeeping.
+  scheduler:
+    build: ./docker/php
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      MAIL_HOST: mailpit
+      SKIP_BOOTSTRAP: 1
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      backend:
+        condition: service_healthy
 
   frontend:
     image: node:24-alpine
