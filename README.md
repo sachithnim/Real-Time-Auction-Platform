@@ -140,7 +140,31 @@ The sections below are filled in as each part of the system is built.
 
 ### Concurrency
 
-_To be documented with the bid engine._
+Every bid is handled by `BidService` in **one database transaction that starts by locking the auction row**
+(`SELECT ... FOR UPDATE`):
+
+1. The lock is taken first. Concurrent bids on the same auction queue on this lock and run one at a time, in the order they
+   acquire it. Bids on different auctions lock different rows and never wait for each other.
+2. Only then is the server clock read and the bid validated against the locked row: time window (regardless of status, so a
+   bid after `end_at` is refused even before the closing job runs), status, and the minimum next bid from
+   `IncrementCalculator`. The client's idea of the price is never trusted.
+3. The bid is inserted, `current_price` and `leader_id` are updated, and `BID_PLACED` / `LEADER_CHANGED` audit events are
+   written in the same transaction, so either everything commits or nothing does.
+4. Bid history is ordered by the auto-increment `id`, which is assigned while the lock is held, so the order is exactly the
+   acceptance order.
+
+If the lock cannot be obtained within a few seconds (`AUCTION_BID_LOCK_WAIT_SECONDS`) or MySQL reports a deadlock, the
+transaction is retried (`AUCTION_BID_TRANSACTION_ATTEMPTS`) and finally answered with `409 BID_CONFLICT_RETRY`. Rejected
+bids are recorded as `BID_REJECTED` after the rollback.
+
+**Duplicate requests.** Bid requests carry an `Idempotency-Key` header (a UUID per user action). The key is claimed in its own
+committed insert, guarded by a unique index on `(user_id, key)`, before the bid runs. A retry of a finished request replays the
+stored response, a retry while the first is still running gets `409 DUPLICATE_REQUEST`, and reusing a key for a different
+body gets `422`. Retryable outcomes (`5xx`, `429`, `BID_CONFLICT_RETRY`) are not stored, so they can be retried with the same
+key.
+
+Tests run on MySQL, never SQLite, because SQLite has no row locks. One test holds the auction lock from a second database
+connection and proves that a blocked bid ends in `BID_CONFLICT_RETRY` without changing anything.
 
 ### Automatic (proxy) bidding
 
