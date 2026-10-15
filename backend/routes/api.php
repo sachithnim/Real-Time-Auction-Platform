@@ -22,6 +22,7 @@ Route::prefix('auth')->group(function () {
 // Public: guests and bidders can browse auctions.
 Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
+Route::get('auctions/{auction}/bids', [BidController::class, 'index']);
 
 // Bidding: bidders only (admins cannot bid), rate limited, safe to retry.
 Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
