@@ -168,7 +168,29 @@ connection and proves that a blocked bid ends in `BID_CONFLICT_RETRY` without ch
 
 ### Automatic (proxy) bidding
 
-_To be documented with proxy bidding._
+A bidder can set a private maximum (`PUT /api/auctions/{id}/auto-bid`). The system then bids for them **only as much as
+needed** to stay in the lead. The maximum is never broadcast, never returned to anyone but its owner, and never shown in
+the public history.
+
+The arithmetic lives in `ProxyBidResolver`, a pure class with no database access that is unit-tested on its own.
+`BidService` calls it **inside the same auction row lock** as every other bid:
+
+- **Defenders** are the other bidders' active maximums, plus the current leader's price if they lead with a manual bid.
+  They are ranked by maximum (highest first), then by when that maximum was set (earliest first).
+- **The challenger wins** if its amount beats the strongest defender. An auto-bid pays only
+  `min(own max, defender max + increment(defender max))`. A manual bid is taken literally, at the amount the bidder
+  typed.
+- **The defender holds** otherwise. The challenger's bid is recorded, then the defender answers automatically with
+  `min(defender max, challenger + increment(challenger))`. With equal maximums, whoever committed to the amount first
+  wins, at that amount.
+- **Updates.** Visible bids are inserted in order, and price and leader are updated. Auto-bids that can no longer place a
+  valid bid are switched off (`AUTO_BID_MAX_REACHED`) so their owners can be told.
+
+Example from the assignment, with an increment of 500: A's maximum is 20,000 and B's is 15,000. A leads at **15,500**:
+B's bid shows at 15,000 and A answers with one increment. A's 20,000 stays private.
+
+A leader can raise their maximum without placing a visible bid. A maximum can never be lowered, and it must be at least
+the next valid bid (`422 MAX_AUTO_BID_REACHED`).
 
 ### Auction closing
 

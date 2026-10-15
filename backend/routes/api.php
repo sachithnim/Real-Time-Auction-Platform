@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,11 @@ Route::get('auctions/{auction}', [AuctionController::class, 'show']);
 // Bidding: bidders only (admins cannot bid), rate limited, safe to retry.
 Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
     Route::post('auctions/{auction}/bids', [BidController::class, 'store']);
+    Route::put('auctions/{auction}/auto-bid', [AutoBidController::class, 'update']);
+});
+
+Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
+    Route::get('auctions/{auction}/auto-bid', [AutoBidController::class, 'show']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(function () {

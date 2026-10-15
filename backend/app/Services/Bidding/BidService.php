@@ -8,6 +8,7 @@ use App\Enums\BidType;
 use App\Enums\ErrorCode;
 use App\Exceptions\ApiException;
 use App\Models\Auction;
+use App\Models\AutoBid;
 use App\Models\Bid;
 use App\Models\User;
 use App\Services\AuctionEventRecorder;
@@ -36,6 +37,7 @@ class BidService
 
     public function __construct(
         private readonly IncrementCalculator $increments,
+        private readonly ProxyBidResolver $resolver,
         private readonly AuctionEventRecorder $events,
     ) {}
 
@@ -62,7 +64,10 @@ class BidService
                     );
                 }
 
-                return $this->acceptBid($locked, $bidder, $amount, BidType::Manual, $minNextBid);
+                // A manual bid is literal: it competes with a maximum equal to its amount.
+                $challenger = new ProxyCandidate($bidder->id, $amount, now(), BidType::Manual);
+
+                return $this->resolveAndApply($locked, $challenger, $minNextBid, $bidder);
             });
         } catch (ApiException $e) {
             $this->recordRejection($auction, $bidder, $amount, $e);
@@ -71,41 +76,185 @@ class BidService
         }
     }
 
-    /** Must run under the auction lock. */
-    private function acceptBid(Auction $auction, User $bidder, int $amount, BidType $type, int $requiredMinimum): BidResult
+    /**
+     * Sets or raises the bidder's private maximum. A leader raising their
+     * maximum places no visible bid; anyone else immediately competes with it.
+     */
+    public function configureAutoBid(Auction $auction, User $bidder, int $maxAmount): BidResult
     {
+        try {
+            return $this->underAuctionLock($auction, function (Auction $locked) use ($bidder, $maxAmount) {
+                $this->assertOpenForBidding($locked, now());
+
+                $minNextBid = $this->increments->minNextBid($locked);
+                $existing = AutoBid::where('auction_id', $locked->id)->where('user_id', $bidder->id)->first();
+                $currentMax = $existing?->is_active ? $existing->max_amount : null;
+
+                // A maximum can only go up, and must at least cover the next valid bid.
+                $floor = max($minNextBid, $currentMax ?? 0);
+                if ($maxAmount < $floor) {
+                    throw new ApiException(
+                        ErrorCode::MaxAutoBidReached,
+                        "Your maximum must be at least {$floor}.",
+                        ['minimum_max_amount' => $floor, 'min_next_bid' => $minNextBid],
+                    );
+                }
+
+                $autoBid = $existing ?? new AutoBid(['auction_id' => $locked->id, 'user_id' => $bidder->id]);
+                $changed = $existing === null || ! $existing->is_active || $existing->max_amount !== $maxAmount;
+                $autoBid->forceFill(['max_amount' => $maxAmount, 'is_active' => true]);
+                if ($changed) {
+                    // Ties are won by whoever committed to the amount first.
+                    $autoBid->max_set_at = now();
+                }
+                $autoBid->save();
+
+                $this->events->record($locked, AuctionEventType::AutoBidConfigured, $bidder, [
+                    'user_id' => $bidder->id,
+                    'max_amount' => $maxAmount,
+                    'previous_max_amount' => $currentMax,
+                    'is_leader' => $locked->leader_id === $bidder->id,
+                ]);
+
+                if ($locked->leader_id === $bidder->id) {
+                    return new BidResult($locked, $minNextBid, autoBid: $autoBid, actingUserId: $bidder->id);
+                }
+
+                $challenger = new ProxyCandidate($bidder->id, $maxAmount, $autoBid->max_set_at, BidType::Auto, $autoBid->id);
+
+                return $this->resolveAndApply($locked, $challenger, $minNextBid, $bidder, $autoBid);
+            });
+        } catch (ApiException $e) {
+            $this->recordRejection($auction, $bidder, $maxAmount, $e, 'AUTO_BID');
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Runs the proxy resolution for a challenger and commits its outcome.
+     * Must run under the auction lock.
+     */
+    private function resolveAndApply(Auction $auction, ProxyCandidate $challenger, int $requiredMinimum, User $actor, ?AutoBid $autoBid = null): BidResult
+    {
+        $resolution = $this->resolver->resolve(
+            $challenger,
+            $this->defenders($auction, $challenger->userId),
+            $auction->current_price,
+            $auction->starting_price,
+            fn (int $price) => $this->increments->incrementFor($price, $auction),
+        );
+
         $previousPrice = $auction->current_price;
         $previousLeaderId = $auction->leader_id;
+        $runningPrice = $previousPrice;
+        $bids = [];
 
-        // The id is assigned while the lock is held, so id order is the true acceptance order.
-        $bid = Bid::create([
-            'auction_id' => $auction->id,
-            'user_id' => $bidder->id,
-            'amount' => $amount,
-            'type' => $type,
-        ]);
+        foreach ($resolution->bids as $planned) {
+            // Ids are assigned while the lock is held, so id order is the true acceptance order.
+            $bid = Bid::create([
+                'auction_id' => $auction->id,
+                'user_id' => $planned->userId,
+                'amount' => $planned->amount,
+                'type' => $planned->type,
+            ]);
 
-        $auction->forceFill(['current_price' => $amount, 'leader_id' => $bidder->id])->save();
+            $this->events->record(
+                $auction,
+                $planned->type === BidType::Manual ? AuctionEventType::BidPlaced : AuctionEventType::AutoBidPlaced,
+                // The acting bidder for their own bid; null (system) for automatic answers.
+                $planned->userId === $actor->id ? $actor : null,
+                [
+                    'bid_id' => $bid->id,
+                    'bidder_id' => $planned->userId,
+                    'amount' => $planned->amount,
+                    'type' => $planned->type->value,
+                    'required_minimum' => $planned->userId === $challenger->userId ? $requiredMinimum : null,
+                    'previous_price' => $runningPrice,
+                    'new_price' => $planned->amount,
+                ],
+            );
 
-        $this->events->record($auction, AuctionEventType::BidPlaced, $bidder, [
-            'bid_id' => $bid->id,
-            'bidder_id' => $bidder->id,
-            'amount' => $amount,
-            'type' => $type->value,
-            'required_minimum' => $requiredMinimum,
-            'previous_price' => $previousPrice,
-            'new_price' => $amount,
-        ]);
+            $runningPrice = $planned->amount;
+            $bids[] = $bid;
+        }
 
-        if ($previousLeaderId !== $bidder->id) {
-            $this->events->record($auction, AuctionEventType::LeaderChanged, $bidder, [
+        $auction->forceFill(['current_price' => $resolution->price, 'leader_id' => $resolution->leaderId])->save();
+
+        if ($previousLeaderId !== $resolution->leaderId) {
+            $this->events->record($auction, AuctionEventType::LeaderChanged, $resolution->leaderId === $actor->id ? $actor : null, [
                 'previous_leader_id' => $previousLeaderId,
-                'new_leader_id' => $bidder->id,
-                'price' => $amount,
+                'new_leader_id' => $resolution->leaderId,
+                'price' => $resolution->price,
             ]);
         }
 
-        return new BidResult($bid, $auction, $this->increments->minNextBid($auction));
+        $minNextBid = $this->increments->minNextBid($auction);
+        $exhausted = $this->deactivateExhaustedAutoBids($auction, $minNextBid);
+
+        return new BidResult(
+            auction: $auction,
+            minNextBid: $minNextBid,
+            bids: $bids,
+            autoBid: $autoBid?->refresh(),
+            outbidUserIds: $previousLeaderId !== null && $previousLeaderId !== $resolution->leaderId ? [$previousLeaderId] : [],
+            exhaustedUserIds: $exhausted,
+            actingUserId: $challenger->userId,
+        );
+    }
+
+    /**
+     * Everyone the challenger competes against: other bidders' active maximums,
+     * plus the current leader's price when they lead with a manual bid.
+     *
+     * @return list<ProxyCandidate>
+     */
+    private function defenders(Auction $auction, int $challengerId): array
+    {
+        $defenders = AutoBid::where('auction_id', $auction->id)
+            ->where('is_active', true)
+            ->where('user_id', '!=', $challengerId)
+            ->get()
+            ->map(fn (AutoBid $auto) => new ProxyCandidate($auto->user_id, $auto->max_amount, $auto->max_set_at, BidType::Auto, $auto->id))
+            ->all();
+
+        $leaderId = $auction->leader_id;
+        $leaderHasAutoBid = collect($defenders)->contains(fn (ProxyCandidate $c) => $c->userId === $leaderId);
+
+        if ($leaderId !== null && $leaderId !== $challengerId && ! $leaderHasAutoBid) {
+            $leadingBid = Bid::where('auction_id', $auction->id)->where('user_id', $leaderId)->orderByDesc('id')->first();
+            $defenders[] = new ProxyCandidate($leaderId, $auction->current_price, $leadingBid->created_at, BidType::Manual);
+        }
+
+        return $defenders;
+    }
+
+    /**
+     * Turns off every auto-bid that can no longer place a valid bid and is not
+     * leading, and records it so the bidder can be told their maximum was reached.
+     *
+     * @return list<int> affected user ids
+     */
+    private function deactivateExhaustedAutoBids(Auction $auction, int $minNextBid): array
+    {
+        $exhausted = AutoBid::where('auction_id', $auction->id)
+            ->where('is_active', true)
+            ->where('user_id', '!=', $auction->leader_id)
+            ->where('max_amount', '<', $minNextBid)
+            ->get();
+
+        foreach ($exhausted as $autoBid) {
+            $autoBid->forceFill(['is_active' => false])->save();
+
+            $this->events->record($auction, AuctionEventType::AutoBidMaxReached, null, [
+                'user_id' => $autoBid->user_id,
+                'max_amount' => $autoBid->max_amount,
+                'price' => $auction->current_price,
+                'min_next_bid' => $minNextBid,
+            ]);
+        }
+
+        return $exhausted->pluck('user_id')->all();
     }
 
     /**
@@ -178,7 +327,7 @@ class BidService
      * audit trail keeps them even though nothing else changed. Logging is
      * best-effort: it must never turn a clean rejection into a server error.
      */
-    private function recordRejection(Auction $auction, User $bidder, int $amount, ApiException $e): void
+    private function recordRejection(Auction $auction, User $bidder, int $amount, ApiException $e, string $action = 'BID'): void
     {
         if ($e->errorCode === ErrorCode::AuctionNotFound) {
             return;
@@ -198,6 +347,7 @@ class BidService
 
         try {
             $this->events->record($auction, AuctionEventType::BidRejected, $bidder, [
+                'action' => $action,
                 'bidder_id' => $bidder->id,
                 'amount' => $amount,
                 'reason' => $e->errorCode->value,
