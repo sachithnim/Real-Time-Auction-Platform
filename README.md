@@ -38,6 +38,8 @@ docker compose up -d --build
 | Mailpit  | http://localhost:8025             | Catches outgoing mail                              |
 | MySQL    | `127.0.0.1:3307`                  | `auction` / `secret`, for database GUI tools       |
 | Redis    | internal only                     | Used by the backend container                      |
+| Queue    | (background)                      | `queue:work`: delayed auction start/close jobs     |
+| Scheduler| (background)                      | `schedule:work`: start/close safety sweeps         |
 
 On start, the backend container installs Composer dependencies if missing, creates `.env` from
 `.env.example` on a fresh clone, runs migrations and the (idempotent) seeders. Source folders are
@@ -192,9 +194,31 @@ B's bid shows at 15,000 and A answers with one increment. A's 20,000 stays priva
 A leader can raise their maximum without placing a visible bid. A maximum can never be lowered, and it must be at least
 the next valid bid (`422 MAX_AUTO_BID_REACHED`).
 
-### Auction closing
+### Starting, anti-sniping and closing
 
-_To be documented with the lifecycle jobs._
+**Starting.** Scheduling an auction queues a `StartAuctionJob` delayed until `start_at`. The job moves it from
+SCHEDULED to LIVE under the auction row lock and records `AUCTION_STARTED`. As a safety net, `auctions:start-due` runs
+every 10 seconds. Starting is idempotent: it only acts on a SCHEDULED auction whose start time has passed.
+
+**Anti-sniping.** Inside the bid transaction, if an accepted bid arrives at or after `end_at - anti_snipe_seconds` and
+`extensions_count < max_extensions`, then `end_at += extension_seconds` and `AUCTION_EXTENDED` is recorded. The
+extension is added to the *current end*, not to "now". That way it can never shorten an auction, and the latest
+possible end is always `original_end_at + max_extensions × extension_seconds`. `original_end_at` is kept.
+
+**Closing.** When an auction goes live, a `CloseAuctionJob` is queued, delayed until `end_at`. `auctions:close-due`
+runs every minute as a safety net. `AuctionCloser`:
+
+1. locks the auction row, the same lock bids use, so a bid and the close never interleave;
+2. does nothing unless the auction is still LIVE, so running it twice, or after a cancellation, is a no-op;
+3. if `end_at` has moved because of an extension, does nothing; the job re-queues itself for the new end;
+4. otherwise takes the leader and price from the locked row. These already encode increments, proxy resolution and
+   ties, so they are the highest valid bid. It then checks the reserve, stores `result` (`SOLD`, `RESERVE_NOT_MET` or
+   `NO_BIDS`), `winner_id` and `final_price` (only when sold), and records `AUCTION_ENDED` plus `WINNER_SELECTED` or
+   `RESERVE_NOT_MET`.
+
+Bids are refused once `now >= end_at` whatever the status, so the moments before the close job runs cannot accept a
+late bid. The jobs use `ShouldBeUniqueUntilProcessing` to avoid duplicate pending jobs, but correctness relies only on
+the locked status check.
 
 ### Real-time updates
 
