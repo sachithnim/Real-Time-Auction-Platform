@@ -147,6 +147,24 @@ class AuctionClosingTest extends TestCase
         $this->assertSame(20_000, $closed->final_price);
     }
 
+    public function test_result_is_visible_and_only_the_winner_learns_they_won(): void
+    {
+        $auction = $this->liveAuction();
+        $winner = User::factory()->create();
+        $this->bids->placeBid($auction, $winner, 12_000);
+        $this->closeAfterEnd($auction);
+
+        $this->actingAs($winner)->getJson("/api/auctions/{$auction->id}")
+            ->assertJsonPath('data.status', 'COMPLETED')
+            ->assertJsonPath('data.result', 'SOLD')
+            ->assertJsonPath('data.final_price', 12_000)
+            ->assertJsonPath('data.is_winner', true)
+            ->assertJsonMissingPath('data.winner_id');
+
+        $this->actingAs(User::factory()->create())->getJson("/api/auctions/{$auction->id}")
+            ->assertJsonPath('data.is_winner', false);
+    }
+
     // --- Timing, idempotency and blocking further bids ----------------------
 
     public function test_closing_twice_changes_nothing_the_second_time(): void
