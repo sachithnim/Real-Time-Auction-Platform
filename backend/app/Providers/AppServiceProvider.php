@@ -37,5 +37,8 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by('email:'.strtolower((string) $request->input('email'))),
             Limit::perMinute(20)->by('ip:'.$request->ip()),
         ]);
+
+        // Bids: generous for real bidding, but stops scripted flooding of the lock.
+        RateLimiter::for('bids', fn (Request $request) => Limit::perMinute(30)->by('user:'.$request->user()?->id));
     }
 }

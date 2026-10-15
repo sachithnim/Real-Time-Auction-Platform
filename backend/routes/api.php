@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\BidController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -20,6 +21,11 @@ Route::prefix('auth')->group(function () {
 // Public: guests and bidders can browse auctions.
 Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
+
+// Bidding: bidders only (admins cannot bid), rate limited, safe to retry.
+Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
+    Route::post('auctions/{auction}/bids', [BidController::class, 'store']);
+});
 
 Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(function () {
     Route::get('auctions', [AdminAuctionController::class, 'index']);
