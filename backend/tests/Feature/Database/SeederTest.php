@@ -26,6 +26,12 @@ class SeederTest extends TestCase
         $this->assertTrue(Hash::check('password', $admin->password));
     }
 
+    public function test_default_increment_tiers_exist_without_running_seeders(): void
+    {
+        // Shipped by a data migration, so production and tests always have them.
+        $this->assertSame(4, BidIncrementRule::count());
+    }
+
     public function test_seeds_demo_bidders(): void
     {
         $this->seed(DatabaseSeeder::class);
