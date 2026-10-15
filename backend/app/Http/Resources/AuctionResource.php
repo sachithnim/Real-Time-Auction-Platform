@@ -3,13 +3,15 @@
 namespace App\Http\Resources;
 
 use App\Models\Auction;
+use App\Services\Bidding\IncrementCalculator;
 use App\Support\ServerTime;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Bidder-facing auction. Privacy rules live here: never the reserve price
- * (only whether it is met), never user ids or emails.
+ * (only whether it is met), never user ids or emails. The viewer only learns
+ * whether they themselves are leading.
  *
  * @mixin Auction
  */
@@ -30,6 +32,9 @@ class AuctionResource extends JsonResource
             'current_price' => $this->current_price,
             'final_price' => $this->final_price,
             'min_increment' => $this->min_increment,
+            // Advisory for the UI; the bid endpoint re-checks it under the row lock.
+            'min_next_bid' => $this->minNextBid(),
+            'is_leading' => $request->user() !== null && $request->user()->id === $this->leader_id,
             'reserve_met' => $this->reserveMet(),
             'bids_count' => $this->whenCounted('bids'),
             'start_at' => ServerTime::format($this->start_at),
@@ -43,6 +48,16 @@ class AuctionResource extends JsonResource
             'ended_at' => ServerTime::format($this->ended_at),
             'cancelled_at' => ServerTime::format($this->cancelled_at),
         ];
+    }
+
+    /** Null once bidding can no longer happen. */
+    private function minNextBid(): ?int
+    {
+        if ($this->status->isFinal()) {
+            return null;
+        }
+
+        return app(IncrementCalculator::class)->minNextBid($this->resource);
     }
 
     /** True when there is no reserve or the current price has reached it. */
