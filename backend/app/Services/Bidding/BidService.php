@@ -17,6 +17,7 @@ use DateTimeInterface;
 use Illuminate\Database\DetectsConcurrencyErrors;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The only place bids are accepted.
@@ -174,7 +175,8 @@ class BidService
 
     /**
      * Rejected bids are logged after the bid transaction has rolled back, so the
-     * audit trail keeps them even though nothing else changed.
+     * audit trail keeps them even though nothing else changed. Logging is
+     * best-effort: it must never turn a clean rejection into a server error.
      */
     private function recordRejection(Auction $auction, User $bidder, int $amount, ApiException $e): void
     {
@@ -182,12 +184,32 @@ class BidService
             return;
         }
 
-        $this->events->record($auction, AuctionEventType::BidRejected, $bidder, [
-            'bidder_id' => $bidder->id,
-            'amount' => $amount,
-            'reason' => $e->errorCode->value,
-            'message' => $e->getMessage(),
-            'details' => $e->details,
-        ]);
+        if ($e->errorCode === ErrorCode::BidConflictRetry) {
+            // The bid was never evaluated, and the audit insert would wait on the
+            // same busy row (foreign key check), so this goes to the app log instead.
+            Log::warning('Bid not processed: auction row lock unavailable.', [
+                'auction_id' => $auction->id,
+                'bidder_id' => $bidder->id,
+                'amount' => $amount,
+            ]);
+
+            return;
+        }
+
+        try {
+            $this->events->record($auction, AuctionEventType::BidRejected, $bidder, [
+                'bidder_id' => $bidder->id,
+                'amount' => $amount,
+                'reason' => $e->errorCode->value,
+                'message' => $e->getMessage(),
+                'details' => $e->details,
+            ]);
+        } catch (QueryException $logFailure) {
+            Log::error('Could not record BID_REJECTED audit event.', [
+                'auction_id' => $auction->id,
+                'reason' => $e->errorCode->value,
+                'error' => $logFailure->getMessage(),
+            ]);
+        }
     }
 }
