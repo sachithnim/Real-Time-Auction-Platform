@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\BidIncrementRule;
+use App\Services\Bidding\IncrementCalculator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +16,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Tiers are read once per request/job (scoped), then reused for every calculation.
+        $this->app->scoped(IncrementCalculator::class, fn () => new IncrementCalculator(
+            BidIncrementRule::query()->get(['from_amount', 'to_amount', 'increment'])->toArray(),
+        ));
     }
 
     /**
@@ -32,5 +37,8 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by('email:'.strtolower((string) $request->input('email'))),
             Limit::perMinute(20)->by('ip:'.$request->ip()),
         ]);
+
+        // Bids: generous for real bidding, but stops scripted flooding of the lock.
+        RateLimiter::for('bids', fn (Request $request) => Limit::perMinute(30)->by('user:'.$request->user()?->id));
     }
 }

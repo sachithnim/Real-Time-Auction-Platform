@@ -123,6 +123,29 @@ class PublicAuctionApiTest extends TestCase
         );
     }
 
+    public function test_details_show_the_minimum_next_bid(): void
+    {
+        $noBids = Auction::factory()->live()->create(['starting_price' => 20_000, 'min_increment' => 500]);
+        $withBids = Auction::factory()->live()->create(['starting_price' => 10_000, 'min_increment' => 500]);
+        $withBids->forceFill(['current_price' => 25_000, 'leader_id' => User::factory()->create()->id])->save();
+        $finished = Auction::factory()->completed()->create();
+
+        $this->getJson("/api/auctions/{$noBids->id}")->assertJsonPath('data.min_next_bid', 20_000);
+        $this->getJson("/api/auctions/{$withBids->id}")->assertJsonPath('data.min_next_bid', 25_500);
+        $this->getJson("/api/auctions/{$finished->id}")->assertJsonPath('data.min_next_bid', null);
+    }
+
+    public function test_viewer_learns_only_whether_they_are_leading(): void
+    {
+        $leader = User::factory()->create();
+        $other = User::factory()->create();
+        $auction = Auction::factory()->live()->create();
+        $auction->forceFill(['current_price' => $auction->starting_price, 'leader_id' => $leader->id])->save();
+
+        $this->actingAs($leader)->getJson("/api/auctions/{$auction->id}")->assertJsonPath('data.is_leading', true);
+        $this->actingAs($other)->getJson("/api/auctions/{$auction->id}")->assertJsonPath('data.is_leading', false);
+    }
+
     public function test_draft_details_look_like_a_missing_auction_to_bidders(): void
     {
         $draft = Auction::factory()->create();
