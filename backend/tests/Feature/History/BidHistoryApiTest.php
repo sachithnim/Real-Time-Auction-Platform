@@ -5,6 +5,7 @@ namespace Tests\Feature\History;
 use App\Models\Auction;
 use App\Models\User;
 use App\Services\Bidding\BidService;
+use App\Services\Lifecycle\AuctionCloser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -104,6 +105,22 @@ class BidHistoryApiTest extends TestCase
         $cursor = $firstPage->json('meta.next_cursor');
         $secondPage = $this->history(query: "?per_page=2&cursor={$cursor}");
         $this->assertSame([12_000, 10_000], array_column($secondPage->json('data'), 'amount'));
+    }
+
+    public function test_auction_shows_the_leader_and_winner_by_pseudonym(): void
+    {
+        $this->getJson("/api/auctions/{$this->auction->id}")->assertJsonPath('data.leader', 'Bidder 3');
+        $this->actingAs($this->c)->getJson("/api/auctions/{$this->auction->id}")->assertJsonPath('data.leader', 'You');
+
+        $this->travelTo($this->auction->end_at);
+        app(AuctionCloser::class)->close($this->auction->id);
+
+        $this->actingAs($this->b)->getJson("/api/auctions/{$this->auction->id}")
+            ->assertJsonPath('data.winner', 'Bidder 3')
+            ->assertJsonPath('data.is_winner', false);
+        $this->actingAs($this->c)->getJson("/api/auctions/{$this->auction->id}")
+            ->assertJsonPath('data.winner', 'You')
+            ->assertJsonPath('data.is_winner', true);
     }
 
     public function test_draft_history_is_not_found(): void

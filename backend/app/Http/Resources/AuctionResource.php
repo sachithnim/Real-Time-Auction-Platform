@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Auction;
+use App\Services\Bidding\BidderPseudonyms;
 use App\Services\Bidding\IncrementCalculator;
 use App\Support\ServerTime;
 use Illuminate\Http\Request;
@@ -10,8 +11,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Bidder-facing auction. Privacy rules live here: never the reserve price
- * (only whether it is met), never user ids or emails. The viewer only learns
- * whether they themselves are leading.
+ * (only whether it is met), never user ids or emails. Leader and winner are
+ * per-auction pseudonyms ("Bidder 2") or "You".
  *
  * @mixin Auction
  */
@@ -34,7 +35,9 @@ class AuctionResource extends JsonResource
             'min_increment' => $this->min_increment,
             // Advisory for the UI; the bid endpoint re-checks it under the row lock.
             'min_next_bid' => $this->minNextBid(),
+            'leader' => app(BidderPseudonyms::class)->nameFor($this->resource, $this->leader_id, $request->user()),
             'is_leading' => $request->user() !== null && $request->user()->id === $this->leader_id,
+            'winner' => app(BidderPseudonyms::class)->nameFor($this->resource, $this->winner_id, $request->user()),
             'is_winner' => $request->user() !== null && $this->winner_id !== null && $request->user()->id === $this->winner_id,
             'reserve_met' => $this->reserveMet(),
             'bids_count' => $this->whenCounted('bids'),
