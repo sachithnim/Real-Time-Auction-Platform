@@ -45,6 +45,9 @@ class DemoAuctionSeeder extends Seeder
             'starting_price' => 20_000,
             'reserve_price' => 50_000,
             'min_increment' => 500,
+            // Long enough to stay biddable for a few days after seeding.
+            'end_at' => now()->addDays(3)->startOfMinute(),
+            'original_end_at' => now()->addDays(3)->startOfMinute(),
         ]);
 
         $factory->live()->withoutReserve()->create([
@@ -52,6 +55,8 @@ class DemoAuctionSeeder extends Seeder
             'description' => 'Traditional Kolam mask carved from kaduru wood. No reserve.',
             'starting_price' => 5_000,
             'min_increment' => 100,
+            'end_at' => now()->addDays(2)->startOfMinute(),
+            'original_end_at' => now()->addDays(2)->startOfMinute(),
         ]);
 
         $factory->completed(AuctionResult::NoBids)->create([
