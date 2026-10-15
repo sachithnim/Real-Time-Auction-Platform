@@ -2,6 +2,7 @@
 
 use App\Exceptions\ApiException;
 use App\Exceptions\ApiExceptionRenderer;
+use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
+            'idempotent' => EnsureIdempotency::class,
         ]);
 
         // Check the role before route-model binding, so a bidder probing admin
