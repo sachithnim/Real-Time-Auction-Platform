@@ -6,8 +6,11 @@ use App\Enums\AuctionEventType;
 use App\Enums\AuctionStatus;
 use App\Enums\ErrorCode;
 use App\Exceptions\ApiException;
+use App\Jobs\CloseAuctionJob;
+use App\Jobs\StartAuctionJob;
 use App\Models\Auction;
 use App\Models\User;
+use App\Support\ServerTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -107,6 +110,37 @@ class AuctionLifecycleService
         });
     }
 
+    /**
+     * System action (start job or sweep): SCHEDULED → LIVE once start_at has
+     * passed. Returns false, changing nothing, when the auction is not due or
+     * no longer scheduled, so running it twice is harmless.
+     */
+    public function start(int $auctionId): bool
+    {
+        return DB::transaction(function () use ($auctionId) {
+            $auction = Auction::whereKey($auctionId)->lockForUpdate()->first();
+
+            if ($auction === null || $auction->status !== AuctionStatus::Scheduled || now()->lt($auction->start_at)) {
+                return false;
+            }
+
+            $this->transition($auction, AuctionStatus::Live);
+            $auction->started_at = now();
+            $auction->save();
+
+            $this->events->record($auction, AuctionEventType::AuctionStarted, null, [
+                'start_at' => ServerTime::format($auction->start_at),
+                'started_at' => ServerTime::format($auction->started_at),
+                'end_at' => ServerTime::format($auction->end_at),
+            ]);
+
+            // The close job is queued only after this transaction commits.
+            CloseAuctionJob::scheduleFor($auction);
+
+            return true;
+        });
+    }
+
     /** Must be called inside a transaction, on a locked row. */
     private function applySchedule(Auction $auction, User $admin): void
     {
@@ -124,6 +158,9 @@ class AuctionLifecycleService
             'start_at' => $auction->start_at->toIso8601ZuluString(),
             'end_at' => $auction->end_at->toIso8601ZuluString(),
         ]);
+
+        // Queued only after the surrounding transaction commits.
+        StartAuctionJob::scheduleFor($auction);
     }
 
     private function transition(Auction $auction, AuctionStatus $to): void
