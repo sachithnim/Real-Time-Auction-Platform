@@ -13,4 +13,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 WORKDIR /var/www/html
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# PHP's built-in server is started directly (not via `artisan serve`, whose child
+# process drops container environment variables and re-reads .env).
+ENV PHP_CLI_SERVER_WORKERS=4
+# Laravel's router script expects to run from the public directory.
+CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
