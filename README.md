@@ -20,23 +20,55 @@ private reserve prices and real-time updates over WebSockets.
 backend/            Laravel REST API
 frontend/           React + TypeScript SPA (Vite)
 docker/             Docker files and init scripts
-docker-compose.yml  Local infrastructure (MySQL, Mailpit)
+docker-compose.yml  Local stack (MySQL, Redis, Mailpit, backend, frontend)
 ```
 
-## Local setup
+## Quick start with Docker
+
+Requires only Docker Desktop.
+
+```bash
+docker compose up -d --build
+```
+
+| Service  | URL / address                     | Notes                                              |
+|----------|-----------------------------------|----------------------------------------------------|
+| Frontend | http://localhost:5173             | Vite dev server with hot reload                    |
+| API      | http://localhost:8000             | Laravel; migrates and seeds itself on start        |
+| Mailpit  | http://localhost:8025             | Catches outgoing mail                              |
+| MySQL    | `127.0.0.1:3307`                  | `auction` / `secret`, for database GUI tools       |
+| Redis    | internal only                     | Used by the backend container                      |
+
+On start, the backend container installs Composer dependencies if missing, creates `.env` from
+`.env.example` on a fresh clone, runs migrations and the (idempotent) seeders. Source folders are
+bind-mounted, so code changes apply without rebuilding.
+
+```bash
+docker compose ps                 # status of every service
+docker compose logs -f backend    # follow API logs
+docker compose exec backend php artisan test
+docker compose down               # stop (add -v to also delete the database volume)
+```
+
+Do not run `php artisan serve` or `npm run dev` on the host at the same time: they would compete for
+ports 8000 and 5173.
+
+## Local setup without Docker
 
 ### Prerequisites
 
 - PHP 8.3+ with `pdo_mysql`, `pcntl`, `bcmath`
 - Composer 2
-- Node.js 20+ and npm
+- Node.js 22+ and npm
 - Docker (for MySQL and Mailpit)
 - Redis on `localhost:6379` (e.g. `brew install redis && brew services start redis`)
 
 ### 1. Infrastructure
 
+Start only the database and mail services; PHP and Node run on the host.
+
 ```bash
-docker compose up -d --wait
+docker compose up -d --wait mysql mailpit
 ```
 
 | Service | Host port  | Notes                                                             |
