@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\BidIncrementRule;
+use App\Services\Bidding\BidderPseudonyms;
 use App\Services\Bidding\IncrementCalculator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -16,6 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Numbers are cached for one request/job only, so new bidders always appear.
+        $this->app->scoped(BidderPseudonyms::class);
+
         // Tiers are read once per request/job (scoped), then reused for every calculation.
         $this->app->scoped(IncrementCalculator::class, fn () => new IncrementCalculator(
             BidIncrementRule::query()->get(['from_amount', 'to_amount', 'increment'])->toArray(),

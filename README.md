@@ -220,6 +220,21 @@ Bids are refused once `now >= end_at` whatever the status, so the moments before
 late bid. The jobs use `ShouldBeUniqueUntilProcessing` to avoid duplicate pending jobs, but correctness relies only on
 the locked status check.
 
+### Bid history and audit trail
+
+**Bids are insert-only.** There are no update or delete routes, and the `Bid` model refuses updates and deletes, so
+history cannot be rewritten. The public history (`GET /api/auctions/{id}/bids`) shows amount, type (`MANUAL` or
+`AUTO`), time and a per-auction pseudonym. "Bidder N" means the bidder's first bid was the Nth to arrive in that
+auction. The number never changes because bids are never edited, and it differs per auction, so a person cannot be
+followed across auctions. The viewer sees "You" for their own bids. User ids, emails and auto-bid maximums never
+appear. Pages use a cursor, newest first, so new bids at the top do not shift the pages being read.
+
+**Every state change writes an `auction_events` row in the same transaction.** Rejected bids are the exception: they
+are written after the rollback. Each payload holds old and new values (price, leader, end time), amounts and reason
+codes, so the events alone reproduce the final price, winner and end time; a test does exactly that. Admins read the
+trail at `GET /api/admin/auctions/{id}/events`, filterable by type, with the actor's details or `null` for system
+actions. They also have a bid history with real identities.
+
 ### Real-time updates
 
 _To be documented with the Reverb integration._

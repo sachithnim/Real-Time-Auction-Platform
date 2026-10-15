@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
+use App\Http\Controllers\Admin\AuctionHistoryController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
@@ -22,6 +23,7 @@ Route::prefix('auth')->group(function () {
 // Public: guests and bidders can browse auctions.
 Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
+Route::get('auctions/{auction}/bids', [BidController::class, 'index']);
 
 // Bidding: bidders only (admins cannot bid), rate limited, safe to retry.
 Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
@@ -40,4 +42,6 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::put('auctions/{auction}', [AdminAuctionController::class, 'update']);
     Route::post('auctions/{auction}/schedule', [AdminAuctionController::class, 'schedule']);
     Route::post('auctions/{auction}/cancel', [AdminAuctionController::class, 'cancel']);
+    Route::get('auctions/{auction}/bids', [AuctionHistoryController::class, 'bids']);
+    Route::get('auctions/{auction}/events', [AuctionHistoryController::class, 'events']);
 });
