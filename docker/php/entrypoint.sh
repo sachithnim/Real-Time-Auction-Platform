@@ -2,6 +2,12 @@
 # Prepares the Laravel app on container start, then runs the given command.
 set -e
 
+# Worker containers (queue, scheduler) start after the API container has
+# already installed dependencies and migrated, so they skip straight to work.
+if [ "${SKIP_BOOTSTRAP:-0}" = "1" ]; then
+    exec "$@"
+fi
+
 if [ ! -f vendor/autoload.php ]; then
     composer install --no-interaction --prefer-dist
 fi

@@ -35,6 +35,7 @@ class AuctionResource extends JsonResource
             // Advisory for the UI; the bid endpoint re-checks it under the row lock.
             'min_next_bid' => $this->minNextBid(),
             'is_leading' => $request->user() !== null && $request->user()->id === $this->leader_id,
+            'is_winner' => $request->user() !== null && $this->winner_id !== null && $request->user()->id === $this->winner_id,
             'reserve_met' => $this->reserveMet(),
             'bids_count' => $this->whenCounted('bids'),
             'start_at' => ServerTime::format($this->start_at),
