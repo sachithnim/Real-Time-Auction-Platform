@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
+use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,10 @@ Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
     });
 });
+
+// Public: guests and bidders can browse auctions.
+Route::get('auctions', [AuctionController::class, 'index']);
+Route::get('auctions/{auction}', [AuctionController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(function () {
     Route::get('auctions', [AdminAuctionController::class, 'index']);
