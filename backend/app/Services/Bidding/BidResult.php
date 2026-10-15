@@ -27,6 +27,8 @@ final class BidResult
         public readonly array $outbidUserIds = [],
         public readonly array $exhaustedUserIds = [],
         ?int $actingUserId = null,
+        /** Whether this bid triggered an anti-sniping extension (new end is on $auction). */
+        public readonly bool $extended = false,
     ) {
         $own = array_values(array_filter($bids, fn (Bid $bid) => $bid->user_id === $actingUserId));
         $this->bid = $own[0] ?? null;

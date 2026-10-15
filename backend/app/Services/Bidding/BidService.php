@@ -189,6 +189,8 @@ class BidService
             ]);
         }
 
+        $extended = $this->extendIfSniping($auction, end($bids)->id);
+
         $minNextBid = $this->increments->minNextBid($auction);
         $exhausted = $this->deactivateExhaustedAutoBids($auction, $minNextBid);
 
@@ -200,7 +202,45 @@ class BidService
             outbidUserIds: $previousLeaderId !== null && $previousLeaderId !== $resolution->leaderId ? [$previousLeaderId] : [],
             exhaustedUserIds: $exhausted,
             actingUserId: $challenger->userId,
+            extended: $extended,
         );
+    }
+
+    /**
+     * Anti-sniping: a bid accepted inside the final window pushes the end back.
+     * Must run under the auction lock, after the bid has been accepted.
+     *
+     * The extension is added to the current end (end_at += extension), not to
+     * "now": it can never shorten an auction, and the latest possible end is
+     * always original_end_at + max_extensions * extension_seconds.
+     */
+    private function extendIfSniping(Auction $auction, int $triggeringBidId): bool
+    {
+        if ($auction->anti_snipe_seconds === 0 || $auction->extensions_count >= $auction->max_extensions) {
+            return false;
+        }
+
+        $windowStart = $auction->end_at->subSeconds($auction->anti_snipe_seconds);
+        if (now()->lt($windowStart)) {
+            return false;
+        }
+
+        $previousEnd = $auction->end_at;
+        $auction->forceFill([
+            'end_at' => $previousEnd->addSeconds($auction->extension_seconds),
+            'extensions_count' => $auction->extensions_count + 1,
+        ])->save();
+
+        $this->events->record($auction, AuctionEventType::AuctionExtended, null, [
+            'triggered_by_bid_id' => $triggeringBidId,
+            'previous_end_at' => ServerTime::format($previousEnd),
+            'new_end_at' => ServerTime::format($auction->end_at),
+            'original_end_at' => ServerTime::format($auction->original_end_at),
+            'extensions_count' => $auction->extensions_count,
+            'max_extensions' => $auction->max_extensions,
+        ]);
+
+        return true;
     }
 
     /**
