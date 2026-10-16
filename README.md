@@ -121,6 +121,9 @@ npm run dev                  # http://localhost:5173
 # Backend — runs against MySQL `auction_test`, never SQLite
 cd backend && php artisan test
 
+# Only the parallel-process concurrency tests
+cd backend && php artisan test --group=concurrency
+
 # Frontend
 cd frontend && npm run typecheck && npm run lint && npm test -- --run
 ```
@@ -167,6 +170,25 @@ key.
 
 Tests run on MySQL, never SQLite, because SQLite has no row locks. One test holds the auction lock from a second database
 connection and proves that a blocked bid ends in `BID_CONFLICT_RETRY` without changing anything.
+
+**Concurrency tests with real parallel processes** (`tests/Feature/Concurrency`, group `concurrency`). Each test starts
+several separate PHP processes with Laravel's Process pool. Every process boots the app with its own MySQL connection,
+waits for a shared start time, then acts at the same instant against committed data:
+
+- **Assignment example.** At price 50,000, A bids 51,000, B 51,500 and C 51,000 at once, on five auctions in parallel.
+  Exactly one bid wins (whichever took the lock first). The others are rejected as too low, and price, leader, history and
+  audit events agree.
+- **Stress.** Eight processes repeatedly bid the minimum on one auction. Every stored bid respects the increment, ids
+  follow acceptance order, and every accepted bid is stored exactly once.
+- **Proxy.** A's auto-bid of 20,000, B's auto-bid of 15,000 and C's manual 12,000 arrive together. Every ordering ends
+  with A leading at 15,500.
+- **Duplicates.** The same HTTP request with the same `Idempotency-Key` is sent five times at once. One bid is placed;
+  the other responses are a replay of the result or `409 DUPLICATE_REQUEST`.
+- **Closing.** Three closers at once give exactly one `AUCTION_ENDED`. Bids racing the close from 60 ms before to 60 ms
+  after `end_at` are either in the final result or rejected with nothing stored.
+
+The tests were checked against a broken build: with `lockForUpdate()` removed they fail, with two winners and bids
+accepted below the minimum.
 
 ### Automatic (proxy) bidding
 
