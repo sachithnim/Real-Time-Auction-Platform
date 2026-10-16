@@ -1,4 +1,5 @@
 import { api } from '../../lib/api'
+import type { AuditUsers } from './auditFormat'
 import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatus, CursorPage, Paginated, Single } from '../../types/api'
 
 export const adminKeys = {
@@ -57,7 +58,7 @@ export async function cancelAuction(id: number, reason: string | null) {
 }
 
 export async function fetchAuctionEvents(id: number, type: string) {
-  const { data } = await api.get<Paginated<AuctionEvent>>(`/api/admin/auctions/${id}/events`, {
+  const { data } = await api.get<Paginated<AuctionEvent> & { meta: { users: AuditUsers } }>(`/api/admin/auctions/${id}/events`, {
     params: { per_page: 200, type: type === 'ALL' ? undefined : type },
   })
   return data

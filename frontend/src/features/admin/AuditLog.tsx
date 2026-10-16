@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { PageLoader } from '../../components/ui'
-import { formatRs } from '../../lib/money'
 import { adminKeys, fetchAuctionEvents } from './api'
+import { describeEvent, eventTitle, type AuditTone } from './auditFormat'
 
 const types = [
   'ALL', 'AUCTION_CREATED', 'AUCTION_UPDATED', 'AUCTION_SCHEDULED', 'AUCTION_STARTED', 'BID_PLACED', 'BID_REJECTED',
@@ -10,25 +10,15 @@ const types = [
   'AUCTION_ENDED', 'WINNER_SELECTED', 'RESERVE_NOT_MET', 'AUCTION_CANCELLED',
 ]
 
-const tone = (type: string) =>
-  type.includes('REJECTED') || type.includes('CANCELLED') || type.includes('NOT_MET') ? 'bg-red-50 text-red-700'
-    : type.includes('BID') ? 'bg-indigo-50 text-indigo-700'
-      : type.includes('WINNER') || type.includes('ENDED') ? 'bg-violet-50 text-violet-700'
-        : 'bg-slate-100 text-slate-700'
-
-const moneyKeys = /price|amount|minimum|bid$/i
-
-function formatValue(key: string, value: unknown): string {
-  if (typeof value === 'number' && moneyKeys.test(key) && !key.endsWith('_id')) {
-    return formatRs(value)
-  }
-  if (value === null) {
-    return '—'
-  }
-  return typeof value === 'object' ? JSON.stringify(value) : String(value)
+const tones: Record<AuditTone, string> = {
+  neutral: 'bg-slate-100 text-slate-700',
+  bid: 'bg-indigo-50 text-indigo-700',
+  warning: 'bg-amber-50 text-amber-800',
+  danger: 'bg-red-50 text-red-700',
+  success: 'bg-emerald-50 text-emerald-700',
 }
 
-/** The full audit trail of one auction, in the order it happened. */
+/** The full audit trail of one auction, in the order it happened, in plain language. */
 export function AuditLog({ auctionId }: { auctionId: number }) {
   const [type, setType] = useState('ALL')
   const events = useQuery({ queryKey: adminKeys.events(auctionId, type), queryFn: () => fetchAuctionEvents(auctionId, type) })
@@ -39,7 +29,7 @@ export function AuditLog({ auctionId }: { auctionId: number }) {
         Show{' '}
         <select className="ml-1 rounded-md border border-slate-300 px-2 py-1 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
           {types.map((t) => (
-            <option key={t} value={t}>{t === 'ALL' ? 'All events' : t}</option>
+            <option key={t} value={t}>{t === 'ALL' ? 'All events' : eventTitle(t)}</option>
           ))}
         </select>
       </label>
@@ -47,24 +37,30 @@ export function AuditLog({ auctionId }: { auctionId: number }) {
       {events.data && events.data.data.length === 0 && <p className="text-sm text-slate-500">No events.</p>}
       {events.data && (
         <ol className="space-y-2" aria-label="Audit log">
-          {events.data.data.map((event) => (
-            <li key={event.id} className="rounded-md border border-slate-200 bg-white p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={`rounded px-2 py-0.5 text-xs font-semibold ${tone(event.type)}`}>{event.type}</span>
-                <span className="text-xs text-slate-500">
-                  {new Date(event.created_at).toLocaleString()} · {event.actor ? `${event.actor.name} (${event.actor.email})` : 'System'}
-                </span>
-              </div>
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                {Object.entries(event.payload).map(([key, value]) => (
-                  <div key={key} className="flex gap-1">
-                    <dt className="text-slate-500">{key}:</dt>
-                    <dd className="font-mono text-slate-800">{formatValue(key, value)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </li>
-          ))}
+          {events.data.data.map((event) => {
+            const view = describeEvent(event, events.data.meta.users)
+            return (
+              <li key={event.id} className="rounded-md border border-slate-200 bg-white p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className={`rounded px-2 py-0.5 text-xs font-semibold ${tones[view.tone]}`}>{view.title}</span>
+                  <span className="text-xs text-slate-500" title={event.actor?.email}>
+                    {new Date(event.created_at).toLocaleString()} · {event.actor ? event.actor.name : 'System'}
+                  </span>
+                </div>
+                {view.summary && <p className="mt-2 text-sm text-slate-800">{view.summary}</p>}
+                {view.details.length > 0 && (
+                  <dl className="mt-2 grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
+                    {view.details.map((line) => (
+                      <div key={line.label} className="flex gap-2">
+                        <dt className="text-slate-500">{line.label}</dt>
+                        <dd className="text-slate-800">{line.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </li>
+            )
+          })}
         </ol>
       )}
     </div>
