@@ -1,8 +1,9 @@
 import { Link } from 'react-router'
 import type { Auction } from '../../types/api'
 import { useAuth } from '../auth/useAuth'
+import { BidForm } from './BidForm'
 
-/** Bid and auto-bid forms; filled in by the next steps. */
+/** Bid and auto-bid forms for bidders on a live auction. */
 export function BiddingPanel({ auction }: { auction: Auction }) {
   const { user } = useAuth()
 
@@ -22,5 +23,13 @@ export function BiddingPanel({ auction }: { auction: Auction }) {
     return <p className="text-sm text-slate-500">Admins cannot bid.</p>
   }
 
-  return null
+  return (
+    <div className="space-y-5 border-t border-slate-100 pt-4">
+      {auction.is_leading ? (
+        <p className="text-sm text-emerald-700">You are the highest bidder. Raise your auto-bid maximum to stay ahead automatically.</p>
+      ) : (
+        <BidForm auction={auction} />
+      )}
+    </div>
+  )
 }

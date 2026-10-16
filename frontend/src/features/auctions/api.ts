@@ -1,5 +1,5 @@
 import { api } from '../../lib/api'
-import type { Auction, AuctionStatus, AutoBid, BidHistoryRow, CursorPage, Paginated, Single } from '../../types/api'
+import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, CursorPage, Paginated, PlaceBidResponse, Single } from '../../types/api'
 
 export const auctionKeys = {
   all: ['auctions'] as const,
@@ -28,5 +28,23 @@ export async function fetchBidHistory(id: number) {
 
 export async function fetchMyAutoBid(id: number) {
   const { data } = await api.get<{ data: AutoBid | null }>(`/api/auctions/${id}/auto-bid`)
+  return data.data
+}
+
+export async function placeBid(auctionId: number, amount: number, idempotencyKey: string) {
+  const { data } = await api.post<PlaceBidResponse>(
+    `/api/auctions/${auctionId}/bids`,
+    { amount },
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  )
+  return data.data
+}
+
+export async function setAutoBid(auctionId: number, maxAmount: number, idempotencyKey: string) {
+  const { data } = await api.put<AutoBidResponse>(
+    `/api/auctions/${auctionId}/auto-bid`,
+    { max_amount: maxAmount },
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  )
   return data.data
 }
