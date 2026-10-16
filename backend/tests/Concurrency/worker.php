@@ -32,7 +32,8 @@ $job = json_decode($argv[1], true, flags: JSON_THROW_ON_ERROR);
 $auction = Auction::findOrFail($job['auction']);
 $user = isset($job['user']) ? User::findOrFail($job['user']) : null;
 
-while (microtime(true) < $job['start_at']) {
+// Optional per-job offset, e.g. to land just before or after an auction's end.
+while (microtime(true) < $job['start_at'] + ($job['delay'] ?? 0)) {
     usleep(100);
 }
 

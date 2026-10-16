@@ -36,12 +36,13 @@ abstract class ConcurrencyTestCase extends TestCase
     /**
      * Runs every job in its own process, released at the same instant.
      *
-     * @param  list<array<string, mixed>>  $jobs
+     * @param  list<array<string, mixed>>  $jobs  a job may add 'delay' seconds to the shared start
+     * @param  float|null  $startAt  shared release time (unix seconds); default: once workers have booted
      * @return list<array<string, mixed>> one decoded result per job, in job order
      */
-    protected function runConcurrently(array $jobs): array
+    protected function runConcurrently(array $jobs, ?float $startAt = null): array
     {
-        $startAt = microtime(true) + self::BOOT_SECONDS;
+        $startAt ??= microtime(true) + self::BOOT_SECONDS;
         $env = $this->workerEnvironment();
 
         $results = Process::pool(function (Pool $pool) use ($jobs, $startAt, $env) {
@@ -68,6 +69,12 @@ abstract class ConcurrencyTestCase extends TestCase
         }
 
         return $decoded;
+    }
+
+    /** A shared release time far enough ahead for every worker to boot. */
+    protected function releaseTimeAfterBoot(): float
+    {
+        return microtime(true) + self::BOOT_SECONDS;
     }
 
     /**
