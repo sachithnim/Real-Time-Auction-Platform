@@ -20,16 +20,19 @@ private reserve prices and real-time updates over WebSockets.
 backend/            Laravel REST API
 frontend/           React + TypeScript SPA (Vite)
 docker/             Docker files and init scripts
-docker-compose.yml  Local stack (MySQL, Redis, Mailpit, backend, frontend)
+docker-compose.yml  Whole stack: MySQL, Redis, Mailpit, API, queue, scheduler, Reverb, frontend
 ```
 
 ## Quick start with Docker
 
-Requires only Docker Desktop.
+Requires only Docker Desktop. From a fresh clone:
 
 ```bash
 docker compose up -d --build
 ```
+
+Then open **http://localhost:5173**. No `.env` file needs to be created by hand: `docker-compose.yml` provides every
+setting the containers need. The first start takes a little longer while Composer and npm install dependencies.
 
 | Service  | URL / address                     | Notes                                              |
 |----------|-----------------------------------|----------------------------------------------------|
@@ -55,6 +58,29 @@ docker compose down               # stop (add -v to also delete the database vol
 
 Do not run `php artisan serve` or `npm run dev` on the host at the same time: they would compete for
 ports 8000 and 5173.
+
+### Demo accounts
+
+All demo accounts use the password `password` (local development only).
+
+| Role   | Email                                           |
+|--------|-------------------------------------------------|
+| Admin  | `admin@auction.test`                            |
+| Bidder | `bidder1@auction.test` … `bidder5@auction.test` |
+
+The seeders create the bid increment tiers and one demo auction in each lifecycle state (draft, scheduled,
+live, completed). Reset the demo data at any time with
+`docker compose exec backend php artisan migrate:fresh --seed`.
+
+### Try it in two minutes
+
+1. Open http://localhost:5173 in two browsers (or one normal and one private window). Log in as `bidder1@auction.test`
+   in one and `bidder2@auction.test` in the other.
+2. Both open **Vintage Ceylon Tea Chest**. bidder1 sets an automatic bid with a maximum of 20,000; bidder2 bids
+   15,000.
+3. Both windows update instantly. bidder1's automatic answer of 15,500 appears in the history, and bidder2 gets an
+   "Outbid" notification. bidder1's 20,000 maximum is never shown to bidder2.
+4. Log in as `admin@auction.test`, open **Manage auctions**, choose the auction and read its **Audit log**.
 
 ## Local setup without Docker
 
@@ -95,31 +121,28 @@ php artisan serve            # http://localhost:8000
 
 `php artisan migrate:fresh --seed` rebuilds the database from scratch at any time.
 
-#### Demo accounts
-
-All demo accounts use the password `password` (local development only).
-
-| Role   | Email                                          |
-|--------|------------------------------------------------|
-| Admin  | `admin@auction.test`                           |
-| Bidder | `bidder1@auction.test` … `bidder5@auction.test` |
-
-The seeders also create the bid increment tiers and one demo auction in each lifecycle state
-(draft, scheduled, live, completed).
+The demo accounts are listed [above](#demo-accounts).
 
 ### 3. Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env
+cp .env.example .env         # set VITE_REVERB_APP_KEY to the backend's REVERB_APP_KEY
 npm run dev                  # http://localhost:5173
 ```
+
+For live updates outside Docker, also run the background processes in separate terminals:
+`php artisan queue:work`, `php artisan schedule:work` and `php artisan reverb:start`.
 
 ## Running the tests
 
 ```bash
-# Backend — runs against MySQL `auction_test`, never SQLite
+# Inside Docker
+docker compose exec backend php artisan test
+docker compose exec frontend npm test -- --run
+
+# Backend on the host — runs against MySQL `auction_test`, never SQLite
 cd backend && php artisan test
 
 # Only the parallel-process concurrency tests
@@ -131,7 +154,9 @@ cd frontend && npm run typecheck && npm run lint && npm test -- --run
 
 Backend tests deliberately use MySQL: the bid engine relies on `SELECT ... FOR UPDATE` row locks, which
 SQLite does not support, so locking tests on SQLite would prove nothing. A guard test
-(`tests/Feature/TestDatabaseTest.php`) fails if the suite is ever pointed at another database.
+(`tests/Feature/TestDatabaseTest.php`) fails if the suite is ever pointed at another database. `phpunit.xml` forces
+`auction_test` even inside the containers, where Docker's own environment says `auction`, so running the tests can
+never touch the development data.
 
 ## Authentication
 
@@ -178,9 +203,33 @@ place a second bid. The submit button is disabled while a request is in flight. 
 message the user can act on (e.g. "Your bid is too low. The minimum is now Rs. 26,000."). An expired CSRF token is
 refreshed and the request replayed once.
 
+## Architecture
+
+```
+Browser (React SPA)
+  │  HTTPS + session cookie (Sanctum)          │  WebSocket (Pusher protocol)
+  ▼                                            ▼
+Laravel API ──► Form Requests ──► Services ──► MySQL (InnoDB, row locks)
+  │                (BidService, ProxyBidResolver, IncrementCalculator,
+  │                 AuctionLifecycleService, AuctionCloser, AuctionBroadcaster)
+  │ after commit
+  ▼
+Redis queue ──► queue worker ──► Reverb ──► subscribed browsers
+                     ▲
+scheduler (start/close sweeps) ─┘ delayed StartAuctionJob / CloseAuctionJob
+```
+
+- **Thin controllers.** Controllers only connect HTTP to the services. Validation lives in Form Requests. Output and
+  privacy rules live in API Resources (bidder and admin views are separate classes).
+- **Pure calculations.** `IncrementCalculator` and `ProxyBidResolver` have no database access and are unit-tested in
+  isolation.
+- **One authority for changes.** Every state change goes through a service that locks the auction row, writes its
+  audit event in the same transaction, and hands real-time events to `AuctionBroadcaster`. Those events are sent
+  only after commit.
+
 ## Technical decisions
 
-The sections below are filled in as each part of the system is built.
+How the hardest parts work, and why they were built this way.
 
 ### Concurrency
 
@@ -321,3 +370,38 @@ Live updates use **Laravel Reverb** (WebSockets, Pusher protocol). The React app
 - **Origins.** Reverb accepts connections only from `REVERB_ALLOWED_ORIGINS` (default `localhost`).
 
 The frontend's `VITE_REVERB_APP_KEY` must equal the backend's `REVERB_APP_KEY`.
+
+## Trade-offs
+
+- **Pessimistic row lock rather than optimistic locking or a queue per auction.** Bids on one auction run strictly one
+  at a time. That is simple and provably correct, and it costs only a short wait under heavy contention on a single
+  auction. Optimistic locking would turn contention into retries. A per-auction queue would add latency and
+  infrastructure. Different auctions never block each other.
+- **Manual bids are literal, auto-bids are proxies.** A manual bid of 25,000 is placed at exactly 25,000. Bidders who
+  want to pay only as much as needed use auto-bid. This keeps manual bids predictable and avoids hidden ceilings.
+- **Anti-sniping extends the current end (`end_at += extension`), not "now + extension".** That never shortens an
+  auction and bounds the latest end at `original_end + max_extensions × extension`.
+- **Broadcasts are queued after commit.** A bid never fails or slows down because the WebSocket server is slow or down.
+  The cost is a little latency, which per-auction sequence numbers make safe: clients detect gaps and re-fetch.
+- **Reference data in a migration.** The increment tiers ship with the schema because the bid engine cannot work
+  without them; admins can still change the rows.
+- **Delayed jobs plus sweeps.** Delayed jobs start and close auctions on time; sweeps every 10 s / 1 min guarantee it
+  even if a job is lost. Both are idempotent, so running twice is harmless.
+
+## Known limitations
+
+- **Development servers.** The Docker stack uses PHP's built-in server (4 workers) and the Vite dev server. A
+  production deployment would use PHP-FPM behind Nginx, a static frontend build and TLS (`wss://`).
+- **One queue worker.** Broadcasts are processed in order by a single worker. With several workers, events for an
+  auction could be delivered out of order; clients would still recover through sequence gaps and a re-fetch.
+- **Clock skew.** The countdown is corrected to the server clock by round-trip estimation, accurate to roughly half
+  the request latency. The server, not the browser, always decides whether a bid is on time.
+- **Start delay.** A scheduled auction whose start job is lost opens within about 10 seconds (the sweep interval).
+  Until then bids receive `AUCTION_NOT_LIVE`.
+- **Pseudonyms are computed per request.** The "Bidder N" numbers come from a grouped query over the auction's bids.
+  That is fine for this scale; a very busy auction would cache or store them.
+- **No payments, email notifications or watchlists.** These are out of scope; in-app notifications cover outbid,
+  maximum reached and won.
+- **Demo credentials.** Seeded accounts and Reverb keys are for local use only and must be changed for any real
+  deployment.
+
