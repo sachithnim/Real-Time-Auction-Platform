@@ -38,7 +38,8 @@ docker compose up -d --build
 | Mailpit  | http://localhost:8025             | Catches outgoing mail                              |
 | MySQL    | `127.0.0.1:3307`                  | `auction` / `secret`, for database GUI tools       |
 | Redis    | internal only                     | Used by the backend container                      |
-| Queue    | (background)                      | `queue:work`: delayed auction start/close jobs     |
+| Reverb   | ws://localhost:8080               | WebSocket server (Laravel Reverb)                  |
+| Queue    | (background)                      | `queue:work`: start/close jobs and broadcasts      |
 | Scheduler| (background)                      | `schedule:work`: start/close safety sweeps         |
 
 On start, the backend container installs Composer dependencies if missing, creates `.env` from
@@ -259,4 +260,26 @@ actions. They also have a bid history with real identities.
 
 ### Real-time updates
 
-_To be documented with the Reverb integration._
+Live updates use **Laravel Reverb** (WebSockets, Pusher protocol). The React app connects with `laravel-echo`.
+
+| Channel        | Who can join                                    | Events |
+|----------------|-------------------------------------------------|--------|
+| `auction.{id}` | anyone                                          | `BidPlaced`, `PriceChanged`, `LeaderChanged`, `AuctionExtended`, `AuctionStarted`, `AuctionEnded`, `AuctionCancelled` |
+| `auctions`     | anyone                                          | `AuctionUpdated` (listing summary) |
+| `user.{id}`    | only that user (`POST /api/broadcasting/auth`)  | `Outbid`, `AutoBidMaxReached`, `AuctionWon` |
+
+- **One place for privacy.** `AuctionBroadcaster` builds every payload. Public events name bidders only by per-auction
+  pseudonym ("Bidder 2"). They never carry user ids, emails, the reserve price or auto-bid maximums. A bidder's own
+  maximum is sent only to them, on their private channel.
+- **Sent only after commit.** Events are created inside the bid or lifecycle transaction but implement
+  `ShouldDispatchAfterCommit`, so a rolled-back change is never announced. A test proves a rollback leaks nothing, and
+  fails if after-commit is removed.
+- **Ordering and recovery.** Every public event carries the auction's next `sequence` number. It is assigned under the
+  auction row lock, so it follows the real order of changes. Events also carry `server_time`. The REST auction object
+  includes the latest `sequence` and the viewer's own `my_pseudonym`. A client ignores events at or below the sequence
+  it already has. It re-fetches the auction when it sees a gap or reconnects.
+- **Delivery path.** Broadcasts are queued jobs (`ShouldBroadcast`), so a slow or unavailable WebSocket server never
+  delays or fails a bid. The queue worker sends them to Reverb.
+- **Origins.** Reverb accepts connections only from `REVERB_ALLOWED_ORIGINS` (default `localhost`).
+
+The frontend's `VITE_REVERB_APP_KEY` must equal the backend's `REVERB_APP_KEY`.
