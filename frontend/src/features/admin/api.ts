@@ -1,0 +1,69 @@
+import { api } from '../../lib/api'
+import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatus, CursorPage, Paginated, Single } from '../../types/api'
+
+export const adminKeys = {
+  all: ['admin'] as const,
+  list: (status: AuctionStatus | 'ALL', page: number) => ['admin', 'auctions', status, page] as const,
+  detail: (id: number) => ['admin', 'auction', id] as const,
+  events: (id: number, type: string) => ['admin', 'events', id, type] as const,
+  bids: (id: number) => ['admin', 'bids', id] as const,
+}
+
+export interface AuctionInput {
+  title: string
+  description: string
+  starting_price: number
+  reserve_price: number | null
+  min_increment: number
+  start_at: string
+  end_at: string
+  anti_snipe_seconds: number
+  extension_seconds: number
+  max_extensions: number
+  status?: 'DRAFT' | 'SCHEDULED'
+}
+
+export async function fetchAdminAuctions(status: AuctionStatus | 'ALL', page: number) {
+  const { data } = await api.get<Paginated<AdminAuction>>('/api/admin/auctions', {
+    params: { status: status === 'ALL' ? undefined : status, page, per_page: 20 },
+  })
+  return data
+}
+
+export async function fetchAdminAuction(id: number) {
+  const { data } = await api.get<Single<AdminAuction>>(`/api/admin/auctions/${id}`)
+  return data.data
+}
+
+export async function createAuction(input: AuctionInput) {
+  const { data } = await api.post<Single<AdminAuction>>('/api/admin/auctions', input)
+  return data.data
+}
+
+export async function updateAuction(id: number, input: AuctionInput) {
+  const { status: _ignored, ...body } = input
+  const { data } = await api.put<Single<AdminAuction>>(`/api/admin/auctions/${id}`, body)
+  return data.data
+}
+
+export async function scheduleAuction(id: number) {
+  const { data } = await api.post<Single<AdminAuction>>(`/api/admin/auctions/${id}/schedule`)
+  return data.data
+}
+
+export async function cancelAuction(id: number, reason: string | null) {
+  const { data } = await api.post<Single<AdminAuction>>(`/api/admin/auctions/${id}/cancel`, { reason })
+  return data.data
+}
+
+export async function fetchAuctionEvents(id: number, type: string) {
+  const { data } = await api.get<Paginated<AuctionEvent>>(`/api/admin/auctions/${id}/events`, {
+    params: { per_page: 200, type: type === 'ALL' ? undefined : type },
+  })
+  return data
+}
+
+export async function fetchAdminBids(id: number) {
+  const { data } = await api.get<CursorPage<AdminBidRow>>(`/api/admin/auctions/${id}/bids`, { params: { per_page: 100 } })
+  return data
+}
