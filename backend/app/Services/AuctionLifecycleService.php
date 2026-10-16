@@ -167,6 +167,8 @@ class AuctionLifecycleService
             'end_at' => $auction->end_at->toIso8601ZuluString(),
         ]);
 
+        $this->broadcaster->scheduled($auction);
+
         // Queued only after the surrounding transaction commits.
         StartAuctionJob::scheduleFor($auction);
     }
