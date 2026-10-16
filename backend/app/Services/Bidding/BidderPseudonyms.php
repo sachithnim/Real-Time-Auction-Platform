@@ -30,6 +30,12 @@ class BidderPseudonyms
 
         $number = $this->numbersFor($auction)[$userId] ?? null;
 
+        if ($number === null) {
+            // A bidder new since the numbers were cached (e.g. later in the same request).
+            unset($this->numbers[$auction->id]);
+            $number = $this->numbersFor($auction)[$userId] ?? null;
+        }
+
         return $number === null ? null : "Bidder {$number}";
     }
 

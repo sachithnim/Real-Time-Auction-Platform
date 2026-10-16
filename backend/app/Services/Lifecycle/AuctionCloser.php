@@ -7,6 +7,7 @@ use App\Enums\AuctionResult;
 use App\Enums\AuctionStatus;
 use App\Models\Auction;
 use App\Services\AuctionEventRecorder;
+use App\Services\Realtime\AuctionBroadcaster;
 use App\Support\ServerTime;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +19,10 @@ use Illuminate\Support\Facades\DB;
  */
 class AuctionCloser
 {
-    public function __construct(private readonly AuctionEventRecorder $events) {}
+    public function __construct(
+        private readonly AuctionEventRecorder $events,
+        private readonly AuctionBroadcaster $broadcaster,
+    ) {}
 
     public function close(int $auctionId): CloseOutcome
     {
@@ -90,5 +94,7 @@ class AuctionCloser
                 'reserve_price' => $auction->reserve_price,
             ]);
         }
+
+        $this->broadcaster->ended($auction);
     }
 }

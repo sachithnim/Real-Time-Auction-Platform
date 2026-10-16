@@ -12,10 +12,12 @@ use App\Models\AutoBid;
 use App\Models\Bid;
 use App\Models\User;
 use App\Services\AuctionEventRecorder;
+use App\Services\Realtime\AuctionBroadcaster;
 use App\Support\ServerTime;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Database\DetectsConcurrencyErrors;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -39,6 +41,7 @@ class BidService
         private readonly IncrementCalculator $increments,
         private readonly ProxyBidResolver $resolver,
         private readonly AuctionEventRecorder $events,
+        private readonly AuctionBroadcaster $broadcaster,
     ) {}
 
     public function placeBid(Auction $auction, User $bidder, int $amount): BidResult
@@ -193,14 +196,25 @@ class BidService
 
         $minNextBid = $this->increments->minNextBid($auction);
         $exhausted = $this->deactivateExhaustedAutoBids($auction, $minNextBid);
+        $outbid = $previousLeaderId !== null && $previousLeaderId !== $resolution->leaderId ? [$previousLeaderId] : [];
+
+        // Assigns sequence numbers under the lock; events are sent after commit.
+        $this->broadcaster->bidsAccepted(
+            $auction,
+            $bids,
+            leaderChanged: $previousLeaderId !== $resolution->leaderId,
+            extended: $extended,
+            outbidUserIds: $outbid,
+            exhaustedAutoBids: $exhausted,
+        );
 
         return new BidResult(
             auction: $auction,
             minNextBid: $minNextBid,
             bids: $bids,
             autoBid: $autoBid?->refresh(),
-            outbidUserIds: $previousLeaderId !== null && $previousLeaderId !== $resolution->leaderId ? [$previousLeaderId] : [],
-            exhaustedUserIds: $exhausted,
+            outbidUserIds: $outbid,
+            exhaustedUserIds: $exhausted->pluck('user_id')->all(),
             actingUserId: $challenger->userId,
             extended: $extended,
         );
@@ -273,9 +287,9 @@ class BidService
      * Turns off every auto-bid that can no longer place a valid bid and is not
      * leading, and records it so the bidder can be told their maximum was reached.
      *
-     * @return list<int> affected user ids
+     * @return Collection<int, AutoBid> the auto-bids that were switched off
      */
-    private function deactivateExhaustedAutoBids(Auction $auction, int $minNextBid): array
+    private function deactivateExhaustedAutoBids(Auction $auction, int $minNextBid): Collection
     {
         $exhausted = AutoBid::where('auction_id', $auction->id)
             ->where('is_active', true)
@@ -294,7 +308,7 @@ class BidService
             ]);
         }
 
-        return $exhausted->pluck('user_id')->all();
+        return $exhausted;
     }
 
     /**

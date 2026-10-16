@@ -10,6 +10,7 @@ use App\Jobs\CloseAuctionJob;
 use App\Jobs\StartAuctionJob;
 use App\Models\Auction;
 use App\Models\User;
+use App\Services\Realtime\AuctionBroadcaster;
 use App\Support\ServerTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,10 @@ use Illuminate\Validation\ValidationException;
  */
 class AuctionLifecycleService
 {
-    public function __construct(private readonly AuctionEventRecorder $events) {}
+    public function __construct(
+        private readonly AuctionEventRecorder $events,
+        private readonly AuctionBroadcaster $broadcaster,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data  Validated, admin-editable fields (times in UTC).
@@ -106,6 +110,8 @@ class AuctionLifecycleService
                 'leader_id' => $auction->leader_id,
             ]);
 
+            $this->broadcaster->cancelled($auction);
+
             return $auction;
         });
     }
@@ -133,6 +139,8 @@ class AuctionLifecycleService
                 'started_at' => ServerTime::format($auction->started_at),
                 'end_at' => ServerTime::format($auction->end_at),
             ]);
+
+            $this->broadcaster->started($auction);
 
             // The close job is queued only after this transaction commits.
             CloseAuctionJob::scheduleFor($auction);
