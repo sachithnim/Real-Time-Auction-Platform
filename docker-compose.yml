@@ -1,10 +1,48 @@
-# Local development stack: `docker compose up -d --build`
-#   API       http://localhost:8000
+# The whole stack with one command:  docker compose up -d --build
+#
 #   Frontend  http://localhost:5173
-#   Mailpit   http://localhost:8025
-#   MySQL     127.0.0.1:3307 (for database GUI tools)
+#   API       http://localhost:8000
 #   Reverb    ws://localhost:8080 (WebSockets)
+#   Mailpit   http://localhost:8025
+#   MySQL     127.0.0.1:3307 (for database GUI tools; user auction / secret)
 #   queue + scheduler run auction start/close jobs, broadcasts and sweeps in the background
+#
+# Everything a fresh clone needs is set here, so no .env file has to be created
+# by hand. Values below override backend/.env inside the containers.
+
+x-backend-env: &backend-env
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: auction
+  DB_USERNAME: auction
+  DB_PASSWORD: secret
+  REDIS_HOST: redis
+  QUEUE_CONNECTION: redis
+  CACHE_STORE: redis
+  MAIL_MAILER: smtp
+  MAIL_HOST: mailpit
+  MAIL_PORT: 1025
+  FRONTEND_URL: http://localhost:5173
+  SANCTUM_STATEFUL_DOMAINS: localhost:5173,localhost
+  SESSION_DOMAIN: localhost
+  # The backend publishes to the reverb container; browsers connect to localhost:8080.
+  BROADCAST_CONNECTION: reverb
+  REVERB_APP_ID: auction-local
+  REVERB_APP_KEY: auction-local-key
+  REVERB_APP_SECRET: auction-local-secret
+  REVERB_HOST: reverb
+  REVERB_PORT: 8080
+  REVERB_SCHEME: http
+  REVERB_ALLOWED_ORIGINS: localhost
+
+x-php-service: &php-service
+  build: ./docker/php
+  restart: unless-stopped
+  working_dir: /var/www/html
+  volumes:
+    - ./backend:/var/www/html
+
 services:
   mysql:
     image: mysql:8.4
@@ -44,19 +82,12 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  # Laravel API. On start it installs dependencies if missing, creates .env from
+  # .env.example on a fresh clone, migrates and seeds (idempotent).
   backend:
-    build: ./docker/php
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./backend:/var/www/html
+    <<: *php-service
     environment:
-      # Container hostnames take precedence over the host-oriented values in backend/.env.
-      DB_HOST: mysql
-      DB_PORT: 3306
-      REDIS_HOST: redis
-      MAIL_HOST: mailpit
-      REVERB_HOST: reverb
+      <<: *backend-env
     ports:
       - "8000:8000"
     depends_on:
@@ -68,22 +99,14 @@ services:
       test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
       interval: 10s
       timeout: 5s
-      start_period: 60s
-      retries: 10
+      start_period: 120s
+      retries: 12
 
-  # Runs queued jobs: delayed auction start and close jobs.
+  # Runs queued jobs: delayed auction start/close jobs and broadcasts.
   queue:
-    build: ./docker/php
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./backend:/var/www/html
+    <<: *php-service
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      REDIS_HOST: redis
-      MAIL_HOST: mailpit
-      REVERB_HOST: reverb
+      <<: *backend-env
       SKIP_BOOTSTRAP: 1
     command: ["php", "artisan", "queue:work", "--tries=5", "--sleep=1"]
     depends_on:
@@ -92,34 +115,20 @@ services:
 
   # Runs the scheduler: start/close safety sweeps and housekeeping.
   scheduler:
-    build: ./docker/php
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./backend:/var/www/html
+    <<: *php-service
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      REDIS_HOST: redis
-      MAIL_HOST: mailpit
-      REVERB_HOST: reverb
+      <<: *backend-env
       SKIP_BOOTSTRAP: 1
     command: ["php", "artisan", "schedule:work"]
     depends_on:
       backend:
         condition: service_healthy
 
-  # WebSocket server: browsers connect to ws://localhost:8080.
+  # WebSocket server (Laravel Reverb).
   reverb:
-    build: ./docker/php
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./backend:/var/www/html
+    <<: *php-service
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      REDIS_HOST: redis
+      <<: *backend-env
       SKIP_BOOTSTRAP: 1
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     ports:
@@ -128,6 +137,7 @@ services:
       backend:
         condition: service_healthy
 
+  # React SPA (Vite dev server).
   frontend:
     image: node:24-alpine
     restart: unless-stopped
@@ -136,6 +146,12 @@ services:
       - ./frontend:/app
       # Linux node_modules live in the container, separate from the host's macOS ones.
       - frontend-node-modules:/app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_REVERB_APP_KEY: auction-local-key
+      VITE_REVERB_HOST: localhost
+      VITE_REVERB_PORT: 8080
+      VITE_REVERB_SCHEME: http
     # --force rebuilds Vite's dependency cache on every start, so a stale cache
     # from an earlier install can never serve uncompiled modules or CSS.
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173 --force"
