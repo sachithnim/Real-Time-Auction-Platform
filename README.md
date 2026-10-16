@@ -125,7 +125,7 @@ cd backend && php artisan test
 # Only the parallel-process concurrency tests
 cd backend && php artisan test --group=concurrency
 
-# Frontend
+# Frontend (bid form validation, countdown, server clock, live-event ordering, error messages)
 cd frontend && npm run typecheck && npm run lint && npm test -- --run
 ```
 
@@ -139,6 +139,44 @@ The SPA uses Laravel Sanctum's cookie-based session authentication, not bearer t
 ever stored in browser JavaScript. The browser first calls `GET /sanctum/csrf-cookie`, then
 `POST /api/auth/login` or `POST /api/auth/register`. CORS allows credentialed requests only from
 `FRONTEND_URL`. Self-registration always creates a bidder account; the admin account is seeded.
+
+## Frontend
+
+React 19, TypeScript and Vite, with React Router, TanStack Query, axios, react-hook-form with zod, laravel-echo with
+pusher-js, and Tailwind CSS.
+
+```
+src/
+  lib/            api client, error messages, server clock, countdown, money, retries, Echo
+  features/
+    auth/         login, registration, route guards
+    auctions/     listing, live auction screen, bid form, auto-bid form, bid history, result
+    realtime/     event reducer (sequence handling), channel hooks, private notifications
+    admin/        auction management, create/edit form, audit log
+  components/     layout, UI kit, toasts, countdown
+```
+
+**Screens.**
+- Bidders: login and register, the auction list (live updates, filter tabs) and the live auction screen. That screen
+  shows price, leader ("You" or "Bidder N"), whether the reserve is met, a countdown that turns red inside the
+  anti-sniping window, the bid form, auto-bid setup, the live bid history and the result.
+- Admins: the auction table, create and edit (draft only), schedule, cancel with a reason, the audit log and the bid
+  history with identities.
+
+**Server-time countdown.** Every API response carries `meta.server_time`. The client measures each request's round
+trip and estimates the offset between its clock and the server's, preferring short round trips. Countdowns tick on
+`serverNow()`, so a wrong local clock does not matter. The server still decides whether a bid is on time.
+
+**Live state.** `applyAuctionEvent` (a pure function, unit-tested) applies one event to the cached auction. An event
+at or below the snapshot's `sequence` is ignored. A skipped sequence means an event was missed, so the auction and
+history are re-fetched; the same happens after any WebSocket reconnect. As a safety net, the screen also re-fetches
+shortly after the scheduled start or end.
+
+**Errors and double submission.** Each bid or auto-bid attempt gets one `Idempotency-Key`. Network failures,
+`BID_CONFLICT_RETRY`, `DUPLICATE_REQUEST` and 5xx are retried automatically with the same key, so a retry can never
+place a second bid. The submit button is disabled while a request is in flight. Every API error code maps to a
+message the user can act on (e.g. "Your bid is too low. The minimum is now Rs. 26,000."). An expired CSRF token is
+refreshed and the request replayed once.
 
 ## Technical decisions
 
