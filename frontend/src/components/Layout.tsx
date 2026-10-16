@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
+import { useUserNotifications } from '../features/realtime/useUserNotifications'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-900'}`
@@ -7,6 +8,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  useUserNotifications(user?.role === 'BIDDER' ? user.id : null)
 
   return (
     <div className="min-h-screen">
