@@ -58,4 +58,15 @@ class AuthController extends Controller
     {
         return new UserResource($request->user());
     }
+
+    /**
+     * Who is signed in, if anyone. Public, so the SPA can check its session on
+     * load without a 401 for visitors who are simply not logged in.
+     */
+    public function session(Request $request): JsonResponse
+    {
+        $user = $request->user('sanctum');
+
+        return response()->json(['data' => $user ? new UserResource($user) : null]);
+    }
 }

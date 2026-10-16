@@ -120,6 +120,24 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('error.code', 'UNAUTHENTICATED');
     }
 
+    public function test_session_endpoint_returns_null_for_guests_without_an_error(): void
+    {
+        $this->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertExactJson(['data' => null]);
+    }
+
+    public function test_session_endpoint_returns_the_signed_in_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.role', 'BIDDER')
+            ->assertJsonMissingPath('data.password');
+    }
+
     public function test_user_can_log_out(): void
     {
         $this->actingAs(User::factory()->create(), 'web')
