@@ -112,6 +112,18 @@ class AdminAuditLogApiTest extends TestCase
         $this->assertSame('BID_TOO_LOW', $events->firstWhere('type', 'BID_REJECTED')['payload']['reason']);
     }
 
+    public function test_users_named_in_payloads_are_resolved_for_the_admin(): void
+    {
+        $auction = $this->runFullAuction();
+
+        $users = $this->actingAs($this->admin)->getJson("/api/admin/auctions/{$auction->id}/events?per_page=200")
+            ->assertOk()
+            ->json('meta.users');
+
+        $this->assertSame(['name' => $this->a->name, 'email' => $this->a->email], $users[(string) $this->a->id]);
+        $this->assertArrayHasKey((string) $this->b->id, $users);
+    }
+
     public function test_the_events_alone_reconstruct_the_final_state(): void
     {
         $auction = $this->runFullAuction();
