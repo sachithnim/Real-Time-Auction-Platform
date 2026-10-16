@@ -37,6 +37,9 @@ class AuctionResource extends JsonResource
             'min_next_bid' => $this->minNextBid(),
             'leader' => app(BidderPseudonyms::class)->nameFor($this->resource, $this->leader_id, $request->user()),
             'is_leading' => $request->user() !== null && $request->user()->id === $this->leader_id,
+            // Live events name bidders by pseudonym only; this lets the viewer recognise themselves.
+            'my_pseudonym' => $request->user() === null ? null
+                : app(BidderPseudonyms::class)->nameFor($this->resource, $request->user()->id, null),
             'winner' => app(BidderPseudonyms::class)->nameFor($this->resource, $this->winner_id, $request->user()),
             'is_winner' => $request->user() !== null && $this->winner_id !== null && $request->user()->id === $this->winner_id,
             'reserve_met' => $this->reserveMet(),
@@ -51,6 +54,9 @@ class AuctionResource extends JsonResource
             'started_at' => ServerTime::format($this->started_at),
             'ended_at' => ServerTime::format($this->ended_at),
             'cancelled_at' => ServerTime::format($this->cancelled_at),
+            // Last real-time event sequence included in this snapshot: clients ignore older
+            // live events and re-fetch when they detect a gap.
+            'sequence' => $this->event_sequence,
         ];
     }
 

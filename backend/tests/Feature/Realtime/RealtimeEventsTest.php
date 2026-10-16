@@ -257,6 +257,22 @@ class RealtimeEventsTest extends TestCase
         Event::assertDispatched(AuctionCancelled::class, fn ($e) => $e->broadcastWith()['status'] === 'CANCELLED');
     }
 
+    public function test_rest_snapshot_tells_clients_their_pseudonym_and_last_sequence(): void
+    {
+        $auction = $this->liveAuction();
+        $me = User::factory()->create();
+        $this->bids->placeBid($auction, User::factory()->create(), 10_000);
+        $this->bids->placeBid($auction, $me, 11_000);
+
+        $this->actingAs($me)->getJson("/api/auctions/{$auction->id}")
+            ->assertJsonPath('data.my_pseudonym', 'Bidder 2')
+            ->assertJsonPath('data.leader', 'You')
+            ->assertJsonPath('data.sequence', $auction->fresh()->event_sequence);
+
+        $this->actingAs(User::factory()->create())->getJson("/api/auctions/{$auction->id}")
+            ->assertJsonPath('data.my_pseudonym', null);
+    }
+
     public function test_every_broadcast_event_is_sent_only_after_commit(): void
     {
         foreach ([...self::PUBLIC_EVENTS, ...self::PRIVATE_EVENTS] as $class) {
