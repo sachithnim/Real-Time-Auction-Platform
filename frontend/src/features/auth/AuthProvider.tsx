@@ -1,21 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { useMemo, type ReactNode } from 'react'
 import { api, fetchCsrfCookie } from '../../lib/api'
 import type { User } from '../../types/api'
 import { AuthContext, meQueryKey, type AuthApi, type LoginInput, type RegisterInput } from './useAuth'
 
-
+/** Who is signed in. Answers 200 with null for visitors, so a guest load logs no error. */
 async function fetchMe(): Promise<User | null> {
-  try {
-    const { data } = await api.get<{ data: User }>('/api/auth/me')
-    return data.data
-  } catch (error) {
-    if (isAxiosError(error) && error.response?.status === 401) {
-      return null
-    }
-    throw error
-  }
+  const { data } = await api.get<{ data: User | null }>('/api/auth/session')
+  return data.data
 }
 
 /** Session-cookie auth (Sanctum SPA): fetch the CSRF cookie, then log in. */
