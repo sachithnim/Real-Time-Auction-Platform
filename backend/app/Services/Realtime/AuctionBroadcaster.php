@@ -139,6 +139,15 @@ class AuctionBroadcaster
         $this->listing($auction);
     }
 
+    /**
+     * A draft became public: tell listing pages so it appears without a refresh.
+     * Nobody can be watching a draft's own channel, so only the listing is updated.
+     */
+    public function scheduled(Auction $auction): void
+    {
+        $this->listing($auction);
+    }
+
     public function cancelled(Auction $auction): void
     {
         $this->publish($auction, AuctionCancelled::class, [

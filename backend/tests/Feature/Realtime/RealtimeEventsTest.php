@@ -214,6 +214,34 @@ class RealtimeEventsTest extends TestCase
 
     // --- Lifecycle ----------------------------------------------------------
 
+    public function test_scheduling_announces_the_auction_to_listing_pages(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $draft = Auction::factory()->create(['title' => 'Signed bat']);
+
+        app(AuctionLifecycleService::class)->schedule($draft, $admin);
+
+        Event::assertDispatched(AuctionUpdated::class, fn (AuctionUpdated $e) => $e->broadcastOn()[0]->name === 'auctions'
+            && $e->broadcastWith()['id'] === $draft->id
+            && $e->broadcastWith()['status'] === 'SCHEDULED');
+    }
+
+    public function test_creating_an_auction_as_scheduled_announces_it_but_a_draft_does_not(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $data = Auction::factory()->make()->only([
+            'title', 'description', 'starting_price', 'reserve_price', 'min_increment', 'start_at', 'end_at',
+            'anti_snipe_seconds', 'extension_seconds', 'max_extensions',
+        ]);
+        $service = app(AuctionLifecycleService::class);
+
+        $service->create($data, $admin);
+        Event::assertNotDispatched(AuctionUpdated::class);
+
+        $scheduled = $service->create($data, $admin, schedule: true);
+        Event::assertDispatched(AuctionUpdated::class, fn (AuctionUpdated $e) => $e->broadcastWith()['id'] === $scheduled->id);
+    }
+
     public function test_start_and_close_are_announced_and_the_winner_is_told_privately(): void
     {
         $auction = Auction::factory()->scheduled()->create(['reserve_price' => null, 'anti_snipe_seconds' => 0, 'extension_seconds' => 0, 'max_extensions' => 0]);
