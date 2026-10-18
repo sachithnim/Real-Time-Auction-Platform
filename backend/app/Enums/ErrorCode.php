@@ -10,6 +10,7 @@ enum ErrorCode: string
 {
     // Generic
     case ValidationFailed = 'VALIDATION_FAILED';
+    case StatefulRequestRequired = 'STATEFUL_REQUEST_REQUIRED';
     case Unauthenticated = 'UNAUTHENTICATED';
     case Forbidden = 'FORBIDDEN';
     case NotFound = 'NOT_FOUND';
@@ -53,6 +54,7 @@ enum ErrorCode: string
             self::BidConflictRetry,
             self::DuplicateRequest => 409,
 
+            self::StatefulRequestRequired => 400,
             self::Unauthenticated => 401,
             self::Forbidden => 403,
             self::NotFound, self::AuctionNotFound => 404,

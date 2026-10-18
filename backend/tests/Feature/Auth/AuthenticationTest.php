@@ -120,6 +120,26 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('error.code', 'UNAUTHENTICATED');
     }
 
+    public function test_login_without_the_web_app_origin_gets_a_clear_error_not_a_crash(): void
+    {
+        $user = User::factory()->create();
+
+        // No Origin/Referer header: Sanctum does not start a session for this request.
+        $this->withHeaders(['Origin' => '', 'Referer' => ''])
+            ->postJson('/api/auth/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertStatus(400)
+            ->assertJsonPath('error.code', 'STATEFUL_REQUEST_REQUIRED')
+            ->assertJsonPath('error.details.required_origin', 'http://localhost:5173');
+    }
+
+    public function test_register_without_the_web_app_origin_gets_a_clear_error(): void
+    {
+        $this->withHeaders(['Origin' => '', 'Referer' => ''])
+            ->postJson('/api/auth/register', [])
+            ->assertStatus(400)
+            ->assertJsonPath('error.code', 'STATEFUL_REQUEST_REQUIRED');
+    }
+
     public function test_session_endpoint_returns_null_for_guests_without_an_error(): void
     {
         $this->getJson('/api/auth/session')
