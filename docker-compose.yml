@@ -3,7 +3,6 @@
 #   Frontend  http://localhost:5173
 #   API       http://localhost:8000
 #   Reverb    ws://localhost:8080 (WebSockets)
-#   Mailpit   http://localhost:8025
 #   MySQL     127.0.0.1:3307 (for database GUI tools; user auction / secret)
 #   queue + scheduler run auction start/close jobs, broadcasts and sweeps in the background
 #
@@ -20,9 +19,8 @@ x-backend-env: &backend-env
   REDIS_HOST: redis
   QUEUE_CONNECTION: redis
   CACHE_STORE: redis
-  MAIL_MAILER: smtp
-  MAIL_HOST: mailpit
-  MAIL_PORT: 1025
+  # The app sends no email; anything Laravel would mail is written to the log instead.
+  MAIL_MAILER: log
   FRONTEND_URL: http://localhost:5173
   SANCTUM_STATEFUL_DOMAINS: localhost:5173,localhost
   SESSION_DOMAIN: localhost
@@ -74,13 +72,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-
-  mailpit:
-    image: axllent/mailpit:latest
-    restart: unless-stopped
-    ports:
-      - "1025:1025"
-      - "8025:8025"
 
   # Laravel API. On start it installs dependencies if missing, creates .env from
   # .env.example on a fresh clone, migrates and seeds (idempotent).
