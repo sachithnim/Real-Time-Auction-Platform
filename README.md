@@ -20,8 +20,17 @@ private reserve prices and real-time updates over WebSockets.
 backend/            Laravel REST API
 frontend/           React + TypeScript SPA (Vite)
 docker/             Docker files and init scripts
-docker-compose.yml  Whole stack: MySQL, Redis, Mailpit, API, queue, scheduler, Reverb, frontend
+docs/images/        Architecture and database diagrams
+docker-compose.yml  Whole stack: MySQL, Redis, API, queue, scheduler, Reverb, frontend
 ```
+
+## Documentation
+
+| Document | Where |
+|---|---|
+| **API documentation** (every endpoint with headers, body and example responses) | **https://documenter.getpostman.com/view/38987690/2sBYHSxfqH** |
+| Architecture diagrams | [Architecture](#architecture) below |
+| Database ER diagram | [Database](#database) below |
 
 ## Quick start with Docker
 
@@ -38,7 +47,6 @@ setting the containers need. The first start takes a little longer while Compose
 |----------|-----------------------------------|----------------------------------------------------|
 | Frontend | http://localhost:5173             | Vite dev server with hot reload                    |
 | API      | http://localhost:8000             | Laravel; migrates and seeds itself on start        |
-| Mailpit  | http://localhost:8025             | Catches outgoing mail                              |
 | MySQL    | `127.0.0.1:3307`                  | `auction` / `secret`, for database GUI tools       |
 | Redis    | internal only                     | Used by the backend container                      |
 | Reverb   | ws://localhost:8080               | WebSocket server (Laravel Reverb)                  |
@@ -89,21 +97,20 @@ live, completed). Reset the demo data at any time with
 - PHP 8.3+ with `pdo_mysql`, `pcntl`, `bcmath`
 - Composer 2
 - Node.js 22+ and npm
-- Docker (for MySQL and Mailpit)
+- Docker (for MySQL)
 - Redis on `localhost:6379` (e.g. `brew install redis && brew services start redis`)
 
 ### 1. Infrastructure
 
-Start only the database and mail services; PHP and Node run on the host.
+Start only the database; PHP and Node run on the host.
 
 ```bash
-docker compose up -d --wait mysql mailpit
+docker compose up -d --wait mysql
 ```
 
 | Service | Host port  | Notes                                                             |
 |---------|------------|-------------------------------------------------------------------|
 | MySQL   | 3307       | db `auction`, user `auction` / `secret`; test db `auction_test`   |
-| Mailpit | 1025, 8025 | SMTP on 1025, web UI on http://localhost:8025                     |
 
 The `auction_test` database is created by `docker/mysql/init/01-create-test-db.sql` the first time the
 MySQL volume is initialised.
@@ -205,19 +212,13 @@ refreshed and the request replayed once.
 
 ## Architecture
 
-```
-Browser (React SPA)
-  │  HTTPS + session cookie (Sanctum)          │  WebSocket (Pusher protocol)
-  ▼                                            ▼
-Laravel API ──► Form Requests ──► Services ──► MySQL (InnoDB, row locks)
-  │                (BidService, ProxyBidResolver, IncrementCalculator,
-  │                 AuctionLifecycleService, AuctionCloser, AuctionBroadcaster)
-  │ after commit
-  ▼
-Redis queue ──► queue worker ──► Reverb ──► subscribed browsers
-                     ▲
-scheduler (start/close sweeps) ─┘ delayed StartAuctionJob / CloseAuctionJob
-```
+### Components
+
+![Component diagram: React SPA, Laravel API, queue worker, scheduler, Reverb, MySQL, Redis](docs/images/architecture-components.png)
+
+### Backend layers
+
+![Backend layers: middleware, thin controllers, form requests, services, models](docs/images/architecture-backend-layers.png)
 
 - **Thin controllers.** Controllers only connect HTTP to the services. Validation lives in Form Requests. Output and
   privacy rules live in API Resources (bidder and admin views are separate classes).
@@ -226,6 +227,26 @@ scheduler (start/close sweeps) ─┘ delayed StartAuctionJob / CloseAuctionJob
 - **One authority for changes.** Every state change goes through a service that locks the auction row, writes its
   audit event in the same transaction, and hands real-time events to `AuctionBroadcaster`. Those events are sent
   only after commit.
+
+### A bid, end to end
+
+![Sequence of one bid: idempotency claim, row lock, validation, proxy resolution, inserts, commit, broadcast](docs/images/sequence-place-bid.png)
+
+### Closing an auction
+
+![Sequence of closing: locked status check, extension re-queue, result, winner, broadcast](docs/images/sequence-close-auction.png)
+
+## Database
+
+![Entity-relationship diagram of users, auctions, bids, auto_bids, auction_events, idempotency_keys and bid_increment_rules](docs/images/er-diagram.png)
+
+- Money columns are `BIGINT UNSIGNED` whole rupees; times are UTC.
+- MySQL `CHECK` constraints refuse impossible auctions (end before start, reserve below the starting price, zero
+  increment, more extensions than allowed).
+- `bids` and `auction_events` are insert-only. Bids are ordered by their auto-increment `id`, assigned under the
+  auction row lock.
+- Unique indexes: one auto-bid per bidder per auction (`auction_id, user_id`); one idempotency key per user
+  (`user_id, key`).
 
 ## Technical decisions
 
