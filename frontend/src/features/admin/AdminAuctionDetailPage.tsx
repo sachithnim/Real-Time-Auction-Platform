@@ -154,7 +154,6 @@ function AdminBids({ auctionId }: { auctionId: number }) {
     <table className="min-w-full text-sm">
       <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
         <tr>
-          <th className="py-2">#</th>
           <th className="py-2">Bidder</th>
           <th className="py-2">Type</th>
           <th className="py-2 text-right">Amount</th>
@@ -164,7 +163,6 @@ function AdminBids({ auctionId }: { auctionId: number }) {
       <tbody className="divide-y divide-slate-100">
         {bids.data.data.map((bid) => (
           <tr key={bid.id}>
-            <td className="py-2 text-slate-400">{bid.id}</td>
             <td className="py-2">{bid.bidder.name} <span className="text-slate-400">({bid.bidder.email} · {bid.bidder.pseudonym})</span></td>
             <td className="py-2">{bid.type}</td>
             <td className="py-2 text-right tabular-nums">{formatRs(bid.amount)}</td>
