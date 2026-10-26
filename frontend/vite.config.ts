@@ -14,6 +14,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Generous per-test limit (default 5 s): on slow disks the first test of a file
+    // also pays for loading its modules while other files run in parallel.
+    testTimeout: 15_000,
     setupFiles: ['./src/test/setup.ts'],
   },
 })
