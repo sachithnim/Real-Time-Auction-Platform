@@ -7,5 +7,8 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('auctions:start-due')->everyTenSeconds()->withoutOverlapping();
 Schedule::command('auctions:close-due')->everyMinute()->withoutOverlapping();
 
+// Watchlist reminders: "starts soon" / "ends soon", each sent once per bidder.
+Schedule::command('auctions:remind-watchers')->everyMinute()->withoutOverlapping();
+
 // Delete idempotency keys older than their retention window.
 Schedule::command('model:prune', ['--model' => [IdempotencyKey::class]])->daily();
