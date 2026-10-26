@@ -155,6 +155,9 @@ cd backend && php artisan test
 # Only the parallel-process concurrency tests
 cd backend && php artisan test --group=concurrency
 
+# The workers' start-up wait is measured automatically; override it if needed
+docker compose exec -e CONCURRENCY_BOOT_SECONDS=45 backend php artisan test --group=concurrency
+
 # Frontend (bid form validation, countdown, server clock, live-event ordering, error messages)
 cd frontend && npm run typecheck && npm run lint && npm test -- --run
 ```
