@@ -3,6 +3,8 @@
 namespace App\Services\Realtime;
 
 use App\Enums\AuctionResult;
+use App\Events\Admin\MonitorAuctionChanged;
+use App\Events\Admin\MonitorBidRejected;
 use App\Events\Auction\AuctionCancelled;
 use App\Events\Auction\AuctionChannelEvent;
 use App\Events\Auction\AuctionEnded;
@@ -16,6 +18,7 @@ use App\Events\User\AuctionWon;
 use App\Events\User\AutoBidMaxReached;
 use App\Events\User\Outbid;
 use App\Models\Auction;
+use App\Models\AuctionEvent;
 use App\Models\AutoBid;
 use App\Models\Bid;
 use App\Services\Bidding\BidderPseudonyms;
@@ -36,6 +39,7 @@ class AuctionBroadcaster
     public function __construct(
         private readonly BidderPseudonyms $names,
         private readonly IncrementCalculator $increments,
+        private readonly AdminMonitor $monitor,
     ) {}
 
     /**
@@ -103,6 +107,16 @@ class AuctionBroadcaster
         }
 
         $this->listing($auction);
+        $this->monitorChanged($auction);
+    }
+
+    /**
+     * A rejected bid, for the admin monitor only. Called after the bid
+     * transaction rolled back, from the audit record of the rejection.
+     */
+    public function bidRejected(AuctionEvent $rejection): void
+    {
+        MonitorBidRejected::dispatch($this->monitor->rejection($rejection));
     }
 
     public function started(Auction $auction): void
@@ -114,6 +128,7 @@ class AuctionBroadcaster
             'min_next_bid' => $this->increments->minNextBid($auction),
         ]);
         $this->listing($auction);
+        $this->monitorChanged($auction);
     }
 
     public function ended(Auction $auction): void
@@ -137,6 +152,7 @@ class AuctionBroadcaster
         }
 
         $this->listing($auction);
+        $this->monitorChanged($auction);
     }
 
     /**
@@ -155,6 +171,13 @@ class AuctionBroadcaster
             'cancelled_at' => ServerTime::format($auction->cancelled_at),
         ]);
         $this->listing($auction);
+        $this->monitorChanged($auction);
+    }
+
+    /** Tells the admin monitor to refresh this auction's row (built when sent). */
+    private function monitorChanged(Auction $auction): void
+    {
+        MonitorAuctionChanged::dispatch($auction->id);
     }
 
     /**
