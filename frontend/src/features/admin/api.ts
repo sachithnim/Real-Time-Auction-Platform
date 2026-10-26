@@ -1,6 +1,6 @@
 import { api } from '../../lib/api'
 import type { AuditUsers } from './auditFormat'
-import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, CursorPage, MonitorSnapshot, Paginated, Single } from '../../types/api'
+import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, CursorPage, FlagStatus, MonitorSnapshot, Paginated, Single } from '../../types/api'
 
 export const adminKeys = {
   all: ['admin'] as const,
@@ -10,6 +10,7 @@ export const adminKeys = {
   bids: (id: number) => ['admin', 'bids', id] as const,
   statistics: ['admin', 'statistics'] as const,
   monitor: ['admin', 'monitor'] as const,
+  flags: (status: FlagStatus | 'ALL') => ['admin', 'flags', status] as const,
 }
 
 export interface AuctionInput {
@@ -73,6 +74,18 @@ export async function fetchStatistics() {
 
 export async function fetchMonitor() {
   const { data } = await api.get<Single<MonitorSnapshot>>('/api/admin/monitor')
+  return data.data
+}
+
+export async function fetchFlags(status: FlagStatus | 'ALL') {
+  const { data } = await api.get<Paginated<BidFlag> & { meta: { open_count: number } }>('/api/admin/flags', {
+    params: { status: status === 'ALL' ? undefined : status, per_page: 100 },
+  })
+  return data
+}
+
+export async function reviewFlag(id: number) {
+  const { data } = await api.post<Single<BidFlag>>(`/api/admin/flags/${id}/review`)
   return data.data
 }
 
