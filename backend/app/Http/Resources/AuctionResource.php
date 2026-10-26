@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Auction;
+use App\Models\User;
 use App\Services\Bidding\BidderPseudonyms;
 use App\Services\Bidding\IncrementCalculator;
 use App\Support\ServerTime;
@@ -43,6 +44,8 @@ class AuctionResource extends JsonResource
             'winner' => app(BidderPseudonyms::class)->nameFor($this->resource, $this->winner_id, $request->user()),
             'is_winner' => $request->user() !== null && $this->winner_id !== null && $request->user()->id === $this->winner_id,
             'reserve_met' => $this->reserveMet(),
+            // Only the viewer's own watch status; who else watches is never shown.
+            'is_watching' => $this->isWatchedBy($request->user()),
             'bids_count' => $this->whenCounted('bids'),
             'start_at' => ServerTime::format($this->start_at),
             'end_at' => ServerTime::format($this->end_at),
@@ -68,6 +71,20 @@ class AuctionResource extends JsonResource
         }
 
         return app(IncrementCalculator::class)->minNextBid($this->resource);
+    }
+
+    /** Uses the listing's preloaded flag when present, otherwise asks once. */
+    private function isWatchedBy(?User $viewer): bool
+    {
+        if ($viewer === null) {
+            return false;
+        }
+
+        if (array_key_exists('is_watching', $this->resource->getAttributes())) {
+            return (bool) $this->resource->getAttribute('is_watching');
+        }
+
+        return $viewer->isWatching($this->resource);
     }
 
     /** True when there is no reserve or the current price has reached it. */

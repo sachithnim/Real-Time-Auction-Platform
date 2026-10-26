@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -63,6 +64,12 @@ class Auction extends Model
     public function hasBids(): bool
     {
         return $this->leader_id !== null;
+    }
+
+    /** Bidders who follow this auction. Private: never exposed to other users. */
+    public function watchers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'watchlists')->withTimestamps();
     }
 
     public function creator(): BelongsTo
