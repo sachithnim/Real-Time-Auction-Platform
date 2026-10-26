@@ -126,6 +126,25 @@ export interface AuctionEvent {
   created_at: string
 }
 
+export interface TopBidder {
+  id: number
+  name: string
+  email: string
+  bids: number
+  auctions: number
+  wins: number
+}
+
+/** GET /api/admin/statistics. Null means there is nothing to measure yet. */
+export interface AuctionStatistics {
+  auctions: { total: number; by_status: Record<AuctionStatus, number> }
+  results: { completed: number; sold: number; reserve_not_met: number; no_bids: number; sell_through_percent: number | null }
+  revenue: { total: number; average: number | null; highest: number | null }
+  bids: { total: number; manual: number; auto: number; bidders: number; auctions_with_bids: number; average_per_auction: number | null }
+  anti_sniping: { extended_auctions: number; total_extensions: number }
+  top_bidders: TopBidder[]
+}
+
 export interface PlaceBidResponse {
   data: { bid: { id: number; amount: number; type: BidType; created_at: string }; auction: Auction }
   meta: Meta

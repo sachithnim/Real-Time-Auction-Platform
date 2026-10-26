@@ -1,6 +1,6 @@
 import { api } from '../../lib/api'
 import type { AuditUsers } from './auditFormat'
-import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatus, CursorPage, Paginated, Single } from '../../types/api'
+import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, CursorPage, Paginated, Single } from '../../types/api'
 
 export const adminKeys = {
   all: ['admin'] as const,
@@ -8,6 +8,7 @@ export const adminKeys = {
   detail: (id: number) => ['admin', 'auction', id] as const,
   events: (id: number, type: string) => ['admin', 'events', id, type] as const,
   bids: (id: number) => ['admin', 'bids', id] as const,
+  statistics: ['admin', 'statistics'] as const,
 }
 
 export interface AuctionInput {
@@ -62,6 +63,11 @@ export async function fetchAuctionEvents(id: number, type: string) {
     params: { per_page: 200, type: type === 'ALL' ? undefined : type },
   })
   return data
+}
+
+export async function fetchStatistics() {
+  const { data } = await api.get<Single<AuctionStatistics>>('/api/admin/statistics')
+  return data.data
 }
 
 export async function fetchAdminBids(id: number) {
