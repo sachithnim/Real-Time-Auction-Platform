@@ -28,9 +28,26 @@ $app->make(ConsoleKernel::class)->bootstrap();
 
 $job = json_decode($argv[1], true, flags: JSON_THROW_ON_ERROR);
 
+// Calibration run: the harness times a bare worker start to size its boot wait.
+if ($job['action'] === 'boot') {
+    fwrite(STDOUT, json_encode(['ok' => true]).PHP_EOL);
+    exit(0);
+}
+
 // Open the connection and load models before the barrier, so the release is instant.
 $auction = Auction::findOrFail($job['auction']);
 $user = isset($job['user']) ? User::findOrFail($job['user']) : null;
+
+// Build the services (and load their classes and the increment tiers) before the
+// barrier too, so the first action after the release is not slowed by cold starts.
+app(BidService::class);
+app(AuctionCloser::class);
+
+// Run the same locked read a bid or close starts with (transaction, row lock,
+// model casts, clock), so none of that code is loaded for the first time after
+// the release. It changes nothing and ends before the shared start.
+DB::transaction(fn () => Auction::whereKey($auction->id)->lockForUpdate()->first());
+now();
 
 // Optional per-job offset, e.g. to land just before or after an auction's end.
 while (microtime(true) < $job['start_at'] + ($job['delay'] ?? 0)) {
