@@ -82,10 +82,12 @@ live, completed). Reset the demo data at any time with
 
 ### Try it in two minutes
 
+The live demo auctions stay open for a few days after seeding; if they have ended, reset the demo data first.
+
 1. Open http://localhost:5173 in two browsers (or one normal and one private window). Log in as `bidder1@auction.test`
    in one and `bidder2@auction.test` in the other.
-2. Both open **Vintage Ceylon Tea Chest**. bidder1 sets an automatic bid with a maximum of 20,000; bidder2 bids
-   15,000.
+2. Both open **Hand-Carved Kandyan Mask** (starting price 5,000). bidder1 sets an automatic bid with a maximum of
+   20,000 and leads at the starting price; bidder2 bids 15,000.
 3. Both windows update instantly. bidder1's automatic answer of 15,500 appears in the history, and bidder2 gets an
    "Outbid" notification. bidder1's 20,000 maximum is never shown to bidder2.
 4. Log in as `admin@auction.test`, open **Manage auctions**, choose the auction and read its **Audit log**.
@@ -394,3 +396,13 @@ Live updates use **Laravel Reverb** (WebSockets, Pusher protocol). The React app
 - **Origins.** Reverb accepts connections only from `REVERB_ALLOWED_ORIGINS` (default `localhost`).
 
 The frontend's `VITE_REVERB_APP_KEY` must equal the backend's `REVERB_APP_KEY`.
+
+## Bonus features
+
+Built on top of the core requirements, from the assignment's list of bonus challenges:
+
+| Bonus | What it does | Where |
+|---|---|---|
+| Rate limiting | Login and registration: 5 attempts per minute per email and 20 per IP. Bids and auto-bids: 30 per minute per user. Over the limit, the API answers `429 TOO_MANY_REQUESTS` with `retry_after` | `AppServiceProvider` |
+| Reconnection handling | The app tracks the WebSocket connection, shows a live / reconnecting badge, and re-fetches the auction and its history as soon as the connection comes back | `useRealtimeStatus`, `RealtimeBadge` |
+| WebSocket event recovery | Every public event carries a per-auction `sequence` number. Old or duplicate events are ignored; a gap means an event was missed, so the client re-fetches the current state | `AuctionBroadcaster`, `applyAuctionEvent` |
