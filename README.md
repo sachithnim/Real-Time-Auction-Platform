@@ -84,8 +84,8 @@ live, completed). Reset the demo data at any time with
 
 1. Open http://localhost:5173 in two browsers (or one normal and one private window). Log in as `bidder1@auction.test`
    in one and `bidder2@auction.test` in the other.
-2. Both open **Vintage Ceylon Tea Chest**. bidder1 sets an automatic bid with a maximum of 20,000; bidder2 bids
-   15,000.
+2. Both open **Hand-Carved Kandyan Mask** (starting price 5,000). bidder1 sets an automatic bid with a maximum of
+   20,000 and leads at the starting price; bidder2 bids 15,000.
 3. Both windows update instantly. bidder1's automatic answer of 15,500 appears in the history, and bidder2 gets an
    "Outbid" notification. bidder1's 20,000 maximum is never shown to bidder2.
 4. Log in as `admin@auction.test`, open **Manage auctions**, choose the auction and read its **Audit log**.
