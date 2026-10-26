@@ -193,6 +193,24 @@ export interface MonitorSnapshot {
   recent_rejections: MonitorRejection[]
 }
 
+export type FlagRule = 'RAPID_BIDDING' | 'MANY_REJECTIONS' | 'SHARED_IP' | 'ALTERNATING_LEADERS'
+export type FlagStatus = 'OPEN' | 'REVIEWED'
+
+/** A suspicious bidding pattern for admin review (admin-only data). */
+export interface BidFlag {
+  id: number
+  rule: FlagRule
+  status: FlagStatus
+  auction: { id: number; title: string | null }
+  bidders: { id: number; name: string; email: string }[]
+  details: Record<string, unknown>
+  occurrences: number
+  first_detected_at: string
+  last_detected_at: string
+  reviewed_by: { id: number; name: string } | null
+  reviewed_at: string | null
+}
+
 export interface PlaceBidResponse {
   data: { bid: { id: number; amount: number; type: BidType; created_at: string }; auction: Auction }
   meta: Meta
