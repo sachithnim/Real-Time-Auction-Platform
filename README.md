@@ -1,5 +1,7 @@
 # Real-Time Auction Platform
 
+[![CI](https://github.com/sachithnim/Real-Time-Auction-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/sachithnim/Real-Time-Auction-Platform/actions/workflows/ci.yml)
+
 A web-based live auction platform where multiple bidders compete on the same auction at the same time.
 The backend is the single authority on bid validity, and every bid is processed under a database row lock.
 The system supports proxy (automatic) bidding, dynamic bid increments, anti-sniping extensions,
@@ -163,6 +165,10 @@ docker compose exec -e CONCURRENCY_BOOT_SECONDS=45 backend php artisan test --gr
 # Frontend (bid form validation, countdown, server clock, live-event ordering, error messages)
 cd frontend && npm run typecheck && npm run lint && npm test -- --run
 ```
+
+GitHub Actions runs the same checks on every pull request and every push to `main` (`.github/workflows/ci.yml`):
+backend code style (Pint) and the full test suite against a MySQL 8.4 service, and frontend typecheck, lint, tests
+and production build.
 
 Backend tests deliberately use MySQL: the bid engine relies on `SELECT ... FOR UPDATE` row locks, which
 SQLite does not support, so locking tests on SQLite would prove nothing. A guard test
