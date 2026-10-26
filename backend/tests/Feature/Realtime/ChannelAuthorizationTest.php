@@ -55,6 +55,18 @@ class ChannelAuthorizationTest extends TestCase
         $this->authorize($user, "private-user.{$other->id}")->assertForbidden();
     }
 
+    public function test_admins_may_join_the_live_monitor_channel(): void
+    {
+        $this->authorize(User::factory()->admin()->create(), 'private-admin.monitor')
+            ->assertOk()
+            ->assertJsonStructure(['auth']);
+    }
+
+    public function test_bidders_may_not_join_the_live_monitor_channel(): void
+    {
+        $this->authorize(User::factory()->create(), 'private-admin.monitor')->assertForbidden();
+    }
+
     public function test_guests_cannot_authorize_private_channels(): void
     {
         $user = User::factory()->create();
