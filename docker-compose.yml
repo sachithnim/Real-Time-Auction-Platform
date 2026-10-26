@@ -143,6 +143,9 @@ services:
       VITE_REVERB_HOST: localhost
       VITE_REVERB_PORT: 8080
       VITE_REVERB_SCHEME: http
+      # Bind mounts on some hosts (e.g. a Windows drive) send no file-change
+      # events into the container; polling keeps hot reload working everywhere.
+      DEV_SERVER_POLLING: "true"
     # --force rebuilds Vite's dependency cache on every start, so a stale cache
     # from an earlier install can never serve uncompiled modules or CSS.
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173 --force"
