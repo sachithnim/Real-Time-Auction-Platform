@@ -23,8 +23,38 @@ abstract class ConcurrencyTestCase extends TestCase
     /** @var list<string> */
     protected $exceptTables = ['migrations', 'bid_increment_rules'];
 
-    /** Workers need time to boot Laravel before the shared start. */
-    private const BOOT_SECONDS = 2.0;
+    /** Measured once per test run: how long one worker takes to start on this machine. */
+    private static ?float $measuredBootSeconds = null;
+
+    /**
+     * Workers need time to boot Laravel before the shared start. The wait is
+     * calibrated from a real worker start, because it ranges from about a second
+     * on a Linux disk to many seconds on a slow mount (e.g. Docker on a Windows
+     * drive). CONCURRENCY_BOOT_SECONDS overrides the measurement.
+     */
+    private function bootSeconds(): float
+    {
+        $configured = env('CONCURRENCY_BOOT_SECONDS');
+        if ($configured !== null && $configured !== '') {
+            return max(2.0, (float) $configured);
+        }
+
+        // Workers boot in parallel and then warm up, so allow a generous multiple.
+        return self::$measuredBootSeconds ??= max(2.0, $this->timeOneWorkerBoot() * 3 + 1);
+    }
+
+    private function timeOneWorkerBoot(): float
+    {
+        $started = microtime(true);
+
+        Process::path(base_path())
+            ->env($this->workerEnvironment())
+            ->timeout(300)
+            ->run([PHP_BINARY, 'tests/Concurrency/worker.php', json_encode(['action' => 'boot'])])
+            ->throw();
+
+        return microtime(true) - $started;
+    }
 
     protected function tearDown(): void
     {
@@ -42,7 +72,7 @@ abstract class ConcurrencyTestCase extends TestCase
      */
     protected function runConcurrently(array $jobs, ?float $startAt = null): array
     {
-        $startAt ??= microtime(true) + self::BOOT_SECONDS;
+        $startAt ??= microtime(true) + $this->bootSeconds();
         $env = $this->workerEnvironment();
 
         $results = Process::pool(function (Pool $pool) use ($jobs, $startAt, $env) {
@@ -50,7 +80,7 @@ abstract class ConcurrencyTestCase extends TestCase
                 $pool->as((string) $index)
                     ->path(base_path())
                     ->env($env)
-                    ->timeout(60)
+                    ->timeout((int) ceil($this->bootSeconds()) + 60)
                     ->command([PHP_BINARY, 'tests/Concurrency/worker.php', json_encode($job + ['start_at' => $startAt])]);
             }
         })->start()->wait();
@@ -74,7 +104,7 @@ abstract class ConcurrencyTestCase extends TestCase
     /** A shared release time far enough ahead for every worker to boot. */
     protected function releaseTimeAfterBoot(): float
     {
-        return microtime(true) + self::BOOT_SECONDS;
+        return microtime(true) + $this->bootSeconds();
     }
 
     /**
