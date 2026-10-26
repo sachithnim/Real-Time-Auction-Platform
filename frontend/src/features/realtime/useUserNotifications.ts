@@ -4,6 +4,7 @@ import { useToast } from '../../components/useToast'
 import { getEcho } from '../../lib/echo'
 import { formatRs } from '../../lib/money'
 import { auctionKeys } from '../auctions/api'
+import { reminderToast, type WatchReminderNotice } from './reminders'
 
 interface Notice {
   auction_id: number
@@ -45,6 +46,10 @@ export function useUserNotifications(userId: number | null) {
       })
       .listen('.AuctionWon', (n: Notice) => {
         toast.push({ tone: 'success', title: 'You won!', body: `${n.title} for ${formatRs(n.final_price)}.` })
+        refresh(n.auction_id)
+      })
+      .listen('.WatchedAuctionReminder', (n: WatchReminderNotice) => {
+        toast.push({ tone: 'info', ...reminderToast(n) })
         refresh(n.auction_id)
       })
 

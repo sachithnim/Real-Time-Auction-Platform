@@ -11,4 +11,12 @@ return [
 
     'bid_transaction_attempts' => (int) env('AUCTION_BID_TRANSACTION_ATTEMPTS', 3),
 
+    /*
+    | Watchlist reminders. Bidders watching an auction are told once when it is
+    | about to start, and once when it is about to end, within these windows.
+    */
+    'remind_starting_within_minutes' => (int) env('AUCTION_REMIND_STARTING_MINUTES', 10),
+
+    'remind_ending_within_minutes' => (int) env('AUCTION_REMIND_ENDING_MINUTES', 5),
+
 ];
