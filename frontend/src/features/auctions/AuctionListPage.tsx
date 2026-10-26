@@ -8,16 +8,20 @@ import { getEcho } from '../../lib/echo'
 import { resultLabels } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
 import type { Auction, AuctionStatus, Paginated } from '../../types/api'
+import { useAuth } from '../auth/useAuth'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useRealtimeStatus } from '../realtime/useRealtimeStatus'
-import { auctionKeys, fetchAuctions } from './api'
+import { auctionKeys, fetchAuctions, type AuctionListFilter } from './api'
+import { WatchButton } from './WatchButton'
 
-const tabs: { value: AuctionStatus | 'ALL'; label: string }[] = [
+const tabs: { value: AuctionListFilter; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'LIVE', label: 'Live' },
   { value: 'SCHEDULED', label: 'Upcoming' },
   { value: 'COMPLETED', label: 'Finished' },
 ]
+
+const watchingTab: { value: AuctionListFilter; label: string } = { value: 'WATCHING', label: 'Watching' }
 
 interface ListingUpdate {
   id: number
@@ -30,7 +34,12 @@ interface ListingUpdate {
 }
 
 export function AuctionListPage() {
-  const [status, setStatus] = useState<AuctionStatus | 'ALL'>('ALL')
+  const { user } = useAuth()
+  const isBidder = user?.role === 'BIDDER'
+  const visibleTabs = isBidder ? [...tabs, watchingTab] : tabs
+  const [selected, setStatus] = useState<AuctionListFilter>('ALL')
+  // The watchlist belongs to a signed-in bidder; after logging out, fall back to all auctions.
+  const status = selected === 'WATCHING' && !isBidder ? 'ALL' : selected
   const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
   const realtime = useRealtimeStatus(() => queryClient.invalidateQueries({ queryKey: auctionKeys.all }))
@@ -79,7 +88,7 @@ export function AuctionListPage() {
           <RealtimeBadge status={realtime} />
         </div>
         <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist">
-          {tabs.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.value}
               type="button"
@@ -110,7 +119,9 @@ export function AuctionListPage() {
       {auctions.data && (
         <>
           {auctions.data.data.length === 0 ? (
-            <p className="py-12 text-center text-slate-500">No auctions here yet.</p>
+            <p className="py-12 text-center text-slate-500">
+              {status === 'WATCHING' ? 'You are not watching any auctions yet. Use ☆ Watch on an auction to follow it.' : 'No auctions here yet.'}
+            </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {auctions.data.data.map((auction) => (
@@ -144,7 +155,10 @@ function AuctionCard({ auction }: { auction: Auction }) {
       <Card className="h-full space-y-3 hover:ring-indigo-300">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-semibold leading-snug">{auction.title}</h2>
-          <StatusBadge status={auction.status} />
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <StatusBadge status={auction.status} />
+            <WatchButton auction={auction} />
+          </div>
         </div>
         <p className="line-clamp-2 text-sm text-slate-600">{auction.description}</p>
         <div className="flex items-end justify-between">

@@ -14,6 +14,7 @@ import { auctionKeys, fetchAuction } from './api'
 import { AuctionResultPanel } from './AuctionResultPanel'
 import { BiddingPanel } from './BiddingPanel'
 import { BidHistory } from './BidHistory'
+import { WatchButton } from './WatchButton'
 
 /** The live auction screen. */
 export function AuctionDetailPage() {
@@ -50,6 +51,7 @@ export function AuctionDetailPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{a.title}</h1>
             <StatusBadge status={a.status} />
+            <WatchButton auction={a} />
           </div>
           <RealtimeBadge status={realtime} />
         </div>
