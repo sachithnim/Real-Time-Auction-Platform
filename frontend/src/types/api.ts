@@ -145,6 +145,52 @@ export interface AuctionStatistics {
   top_bidders: TopBidder[]
 }
 
+/** One running auction on the admin live monitor (admin-only data). */
+export interface MonitorAuction {
+  id: number
+  title: string
+  status: AuctionStatus
+  starting_price: number
+  current_price: number | null
+  reserve_price: number | null
+  reserve_met: boolean
+  min_next_bid: number | null
+  leader: { id: number; name: string; email: string; pseudonym: string | null } | null
+  bids_count: number
+  recent_bids: number
+  active_auto_bids: number
+  end_at: string
+  original_end_at: string
+  extensions_count: number
+  max_extensions: number
+  anti_snipe_seconds: number
+  sequence: number
+}
+
+/** A monitor update for an auction that no longer exists. */
+export interface MonitorAuctionGone {
+  id: number
+  status: null
+}
+
+export interface MonitorRejection {
+  id: number
+  auction_id: number
+  auction_title: string | null
+  bidder: { id: number; name: string; email: string } | null
+  action: 'BID' | 'AUTO_BID'
+  amount: number | null
+  reason: string | null
+  message: string | null
+  created_at: string
+}
+
+/** GET /api/admin/monitor */
+export interface MonitorSnapshot {
+  auctions: MonitorAuction[]
+  recent_rejections: MonitorRejection[]
+}
+
 export interface PlaceBidResponse {
   data: { bid: { id: number; amount: number; type: BidType; created_at: string }; auction: Auction }
   meta: Meta

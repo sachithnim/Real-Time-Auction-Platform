@@ -27,6 +27,9 @@ export function Layout() {
                   <NavLink to="/admin/auctions" className={navClass}>
                     Manage auctions
                   </NavLink>
+                  <NavLink to="/admin/monitor" className={navClass}>
+                    Live monitor
+                  </NavLink>
                   <NavLink to="/admin/statistics" className={navClass}>
                     Statistics
                   </NavLink>

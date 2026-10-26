@@ -1,6 +1,6 @@
 import { api } from '../../lib/api'
 import type { AuditUsers } from './auditFormat'
-import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, CursorPage, Paginated, Single } from '../../types/api'
+import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, CursorPage, MonitorSnapshot, Paginated, Single } from '../../types/api'
 
 export const adminKeys = {
   all: ['admin'] as const,
@@ -9,6 +9,7 @@ export const adminKeys = {
   events: (id: number, type: string) => ['admin', 'events', id, type] as const,
   bids: (id: number) => ['admin', 'bids', id] as const,
   statistics: ['admin', 'statistics'] as const,
+  monitor: ['admin', 'monitor'] as const,
 }
 
 export interface AuctionInput {
@@ -67,6 +68,11 @@ export async function fetchAuctionEvents(id: number, type: string) {
 
 export async function fetchStatistics() {
   const { data } = await api.get<Single<AuctionStatistics>>('/api/admin/statistics')
+  return data.data
+}
+
+export async function fetchMonitor() {
+  const { data } = await api.get<Single<MonitorSnapshot>>('/api/admin/monitor')
   return data.data
 }
 
