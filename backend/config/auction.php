@@ -19,4 +19,16 @@ return [
 
     'remind_ending_within_minutes' => (int) env('AUCTION_REMIND_ENDING_MINUTES', 5),
 
+    /*
+    | Suspicious bidding: patterns that are flagged for an admin to review.
+    | Flags never block a bid; they are signals for a human, not proof.
+    */
+    'suspicious' => [
+        'rapid_bids' => 10,              // manual bids by one bidder on one auction…
+        'rapid_window_seconds' => 60,    // …within this many seconds
+        'rejections' => 5,               // rejected bids by one bidder on one auction…
+        'rejection_window_minutes' => 5, // …within this many minutes
+        'alternating_lead_changes' => 6, // lead changes between exactly two bidders
+    ],
+
 ];

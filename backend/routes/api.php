@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\AuctionHistoryController;
+use App\Http\Controllers\Admin\BidFlagController;
 use App\Http\Controllers\Admin\MonitorController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\WatchlistController;
+use App\Http\Middleware\ScanBiddingActivity;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -30,8 +32,9 @@ Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
 Route::get('auctions/{auction}/bids', [BidController::class, 'index']);
 
-// Bidding: bidders only (admins cannot bid), rate limited, safe to retry.
-Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
+// Bidding: bidders only (admins cannot bid), rate limited, scanned for suspicious
+// patterns after the response is sent, safe to retry.
+Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', ScanBiddingActivity::class, 'idempotent'])->group(function () {
     Route::post('auctions/{auction}/bids', [BidController::class, 'store']);
     Route::put('auctions/{auction}/auto-bid', [AutoBidController::class, 'update']);
 });
@@ -53,4 +56,6 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::get('auctions/{auction}/events', [AuctionHistoryController::class, 'events']);
     Route::get('statistics', [StatisticsController::class, 'index']);
     Route::get('monitor', [MonitorController::class, 'index']);
+    Route::get('flags', [BidFlagController::class, 'index']);
+    Route::post('flags/{flag}/review', [BidFlagController::class, 'review']);
 });
