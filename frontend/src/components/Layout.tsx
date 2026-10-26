@@ -23,9 +23,14 @@ export function Layout() {
                 Auctions
               </NavLink>
               {user?.role === 'ADMIN' && (
-                <NavLink to="/admin/auctions" className={navClass}>
-                  Manage auctions
-                </NavLink>
+                <>
+                  <NavLink to="/admin/auctions" className={navClass}>
+                    Manage auctions
+                  </NavLink>
+                  <NavLink to="/admin/statistics" className={navClass}>
+                    Statistics
+                  </NavLink>
+                </>
               )}
             </nav>
           </div>
