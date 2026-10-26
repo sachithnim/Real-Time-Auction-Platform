@@ -3,17 +3,29 @@ import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, C
 
 export const auctionKeys = {
   all: ['auctions'] as const,
-  list: (status: AuctionStatus | 'ALL', page: number) => ['auctions', 'list', status, page] as const,
+  list: (filter: AuctionListFilter, page: number) => ['auctions', 'list', filter, page] as const,
   detail: (id: number) => ['auctions', 'detail', id] as const,
   bids: (id: number) => ['auctions', 'bids', id] as const,
   autoBid: (id: number) => ['auctions', 'auto-bid', id] as const,
 }
 
-export async function fetchAuctions(status: AuctionStatus | 'ALL', page: number) {
+/** A status tab, every auction, or the signed-in bidder's watchlist. */
+export type AuctionListFilter = AuctionStatus | 'ALL' | 'WATCHING'
+
+export async function fetchAuctions(filter: AuctionListFilter, page: number) {
+  const status = filter === 'ALL' || filter === 'WATCHING' ? undefined : filter
   const { data } = await api.get<Paginated<Auction>>('/api/auctions', {
-    params: { status: status === 'ALL' ? undefined : status, page, per_page: 12 },
+    params: { status, watching: filter === 'WATCHING' ? 1 : undefined, page, per_page: 12 },
   })
   return data
+}
+
+export async function watchAuction(id: number) {
+  await api.put(`/api/auctions/${id}/watch`)
+}
+
+export async function unwatchAuction(id: number) {
+  await api.delete(`/api/auctions/${id}/watch`)
 }
 
 export async function fetchAuction(id: number) {

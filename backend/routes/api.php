@@ -8,6 +8,7 @@ use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
+use App\Http\Controllers\WatchlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -37,6 +38,8 @@ Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent']
 
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
     Route::get('auctions/{auction}/auto-bid', [AutoBidController::class, 'show']);
+    Route::put('auctions/{auction}/watch', [WatchlistController::class, 'store']);
+    Route::delete('auctions/{auction}/watch', [WatchlistController::class, 'destroy']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(function () {

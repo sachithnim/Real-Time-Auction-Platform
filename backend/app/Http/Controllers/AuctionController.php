@@ -19,10 +19,23 @@ class AuctionController extends Controller
 {
     public function index(ListPublicAuctionsRequest $request): AnonymousResourceCollection
     {
+        $viewer = $request->user();
+
+        if ($request->boolean('watching') && $viewer === null) {
+            throw new ApiException(ErrorCode::Unauthenticated, 'Log in to see the auctions you are watching.');
+        }
+
         $auctions = Auction::query()
             ->withCount('bids')
+            // The viewer's own watch status, in the same query (no per-row lookups).
+            ->when($viewer, fn ($query) => $query->withExists([
+                'watchers as is_watching' => fn ($watchers) => $watchers->whereKey($viewer->id),
+            ]))
             ->where('status', '!=', AuctionStatus::Draft)
             ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when($request->boolean('watching'), fn ($query) => $query->whereHas(
+                'watchers', fn ($watchers) => $watchers->whereKey($viewer->id),
+            ))
             // Live first (ending soonest), then upcoming (starting soonest), then finished (most recent first).
             ->orderByRaw("FIELD(status, 'LIVE', 'SCHEDULED', 'COMPLETED', 'CANCELLED')")
             ->orderByRaw("CASE WHEN status = 'LIVE' THEN end_at END ASC")

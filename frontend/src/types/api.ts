@@ -49,6 +49,8 @@ export interface Auction {
   winner: string | null
   is_winner: boolean
   reserve_met: boolean
+  /** The viewer's own watchlist status (always false for guests). */
+  is_watching: boolean
   bids_count?: number
   start_at: string
   end_at: string
