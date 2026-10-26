@@ -12,3 +12,6 @@ use Illuminate\Support\Facades\Broadcast;
  * reached, you won). Only that user may subscribe.
  */
 Broadcast::channel('user.{id}', fn (User $user, int $id) => $user->id === $id);
+
+// Private channel: the admin live monitor (identities, reserve, rejected bids). Admins only.
+Broadcast::channel('admin.monitor', fn (User $user) => $user->isAdmin());

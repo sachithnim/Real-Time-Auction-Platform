@@ -380,6 +380,7 @@ Live updates use **Laravel Reverb** (WebSockets, Pusher protocol). The React app
 | `auction.{id}` | anyone                                          | `BidPlaced`, `PriceChanged`, `LeaderChanged`, `AuctionExtended`, `AuctionStarted`, `AuctionEnded`, `AuctionCancelled` |
 | `auctions`     | anyone                                          | `AuctionUpdated` (listing summary) |
 | `user.{id}`    | only that user (`POST /api/broadcasting/auth`)  | `Outbid`, `AutoBidMaxReached`, `AuctionWon` |
+| `admin.monitor` | admins only (`POST /api/broadcasting/auth`)   | `MonitorAuctionChanged`, `MonitorBidRejected` (live monitor) |
 
 - **One place for privacy.** `AuctionBroadcaster` builds every payload. Public events name bidders only by per-auction
   pseudonym ("Bidder 2"). They never carry user ids, emails, the reserve price or auto-bid maximums. A bidder's own
@@ -406,4 +407,5 @@ Built on top of the core requirements, from the assignment's list of bonus chall
 | Rate limiting | Login and registration: 5 attempts per minute per email and 20 per IP. Bids and auto-bids: 30 per minute per user. Over the limit, the API answers `429 TOO_MANY_REQUESTS` with `retry_after` | `AppServiceProvider` |
 | Reconnection handling | The app tracks the WebSocket connection, shows a live / reconnecting badge, and re-fetches the auction and its history as soon as the connection comes back | `useRealtimeStatus`, `RealtimeBadge` |
 | WebSocket event recovery | Every public event carries a per-auction `sequence` number. Old or duplicate events are ignored; a gap means an event was missed, so the client re-fetches the current state | `AuctionBroadcaster`, `applyAuctionEvent` |
+| Admin live monitoring | Admin **Live monitor** page (`GET /api/admin/monitor`): every LIVE auction with its price, reserve, real leader, bids in the last 5 minutes, active auto-bids and a countdown, plus the latest rejected bids with their reason. Updated over the private `admin.monitor` WebSocket channel, which only admins can join; rows are built when the event is sent, after commit, so the bid lock is never held longer | `AdminMonitor`, `MonitorAuctionChanged`, `MonitorBidRejected`, `AdminMonitorPage` |
 | Auction statistics | Admin **Statistics** page (`GET /api/admin/statistics`): auctions per status, sold / reserve not met / no bids with the sell-through rate, total, average and highest sale, bid counts (manual vs automatic), anti-sniping use and the most active bidders. Read-only aggregate queries over existing data, refreshed every 30 seconds | `AuctionStatistics`, `AdminStatisticsPage` |

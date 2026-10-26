@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * The only place bids are accepted.
@@ -400,7 +401,7 @@ class BidService
         }
 
         try {
-            $this->events->record($auction, AuctionEventType::BidRejected, $bidder, [
+            $rejection = $this->events->record($auction, AuctionEventType::BidRejected, $bidder, [
                 'action' => $action,
                 'bidder_id' => $bidder->id,
                 'amount' => $amount,
@@ -413,6 +414,17 @@ class BidService
                 'auction_id' => $auction->id,
                 'reason' => $e->errorCode->value,
                 'error' => $logFailure->getMessage(),
+            ]);
+
+            return;
+        }
+
+        try {
+            $this->broadcaster->bidRejected($rejection);
+        } catch (Throwable $notifyFailure) {
+            Log::warning('Could not notify the admin monitor of a rejected bid.', [
+                'auction_id' => $auction->id,
+                'error' => $notifyFailure->getMessage(),
             ]);
         }
     }
