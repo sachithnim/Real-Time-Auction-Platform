@@ -15,6 +15,7 @@ import { AuctionResultPanel } from './AuctionResultPanel'
 import { BiddingPanel } from './BiddingPanel'
 import { BidHistory } from './BidHistory'
 import { CheckoutPanel } from './CheckoutPanel'
+import { leaderBadge } from './leaderBadge'
 import { WatchButton } from './WatchButton'
 
 /** The live auction screen. */
@@ -44,6 +45,7 @@ export function AuctionDetailPage() {
   }
 
   const a = auction.data
+  const badge = leaderBadge(a)
 
   return (
     <div className="space-y-6">
@@ -82,9 +84,9 @@ export function AuctionDetailPage() {
                 {formatRs(a.current_price ?? a.starting_price)}
               </div>
               <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                {a.leader && (
-                  <span className={`rounded-full px-2 py-0.5 font-medium ${a.is_leading ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
-                    {a.is_leading ? 'You are leading' : `Leader: ${a.leader}`}
+                {badge && (
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${badge.tone === 'good' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                    {badge.text}
                   </span>
                 )}
                 <span className={`rounded-full px-2 py-0.5 font-medium ${a.reserve_met ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
