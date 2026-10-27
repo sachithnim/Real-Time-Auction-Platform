@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { Alert, Button, Card, PageLoader } from '../../components/ui'
+import { TableSkeleton } from '../../components/Skeleton'
+import { Alert, Button, Card } from '../../components/ui'
 import { useToast } from '../../components/useToast'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -70,7 +71,7 @@ export function AdminCategoriesPage() {
         {error && <div className="mt-3"><Alert>{error}</Alert></div>}
       </Card>
 
-      {categories.isPending && <PageLoader />}
+      {categories.isPending && <TableSkeleton rows={4} label="Loading categories" />}
       {categories.isError && <Alert>{friendlyMessage(parseApiError(categories.error))}</Alert>}
       {categories.data && (
         <Card className="p-0">
@@ -94,6 +95,7 @@ function CategoryRow({ category, onChanged }: { category: Category; onChanged: (
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(category.name)
   const [error, setError] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const used = category.auctions_count ?? 0
 
   const rename = useMutation({
@@ -112,7 +114,10 @@ function CategoryRow({ category, onChanged }: { category: Category; onChanged: (
       toast.push({ tone: 'success', title: 'Category deleted', body: category.name })
       onChanged()
     },
-    onError: (e) => setError(friendlyMessage(parseApiError(e))),
+    onError: (e) => {
+      setConfirmingDelete(false)
+      setError(friendlyMessage(parseApiError(e)))
+    },
   })
 
   return (
@@ -145,10 +150,9 @@ function CategoryRow({ category, onChanged }: { category: Category; onChanged: (
               <Button variant="secondary" onClick={() => setEditing(true)}>Rename</Button>
               <Button
                 variant="secondary"
-                busy={remove.isPending}
-                disabled={used > 0}
+                disabled={used > 0 || confirmingDelete}
                 title={used > 0 ? 'Used by auctions: move them to another category first.' : undefined}
-                onClick={() => remove.mutate()}
+                onClick={() => setConfirmingDelete(true)}
               >
                 Delete
               </Button>
@@ -156,6 +160,15 @@ function CategoryRow({ category, onChanged }: { category: Category; onChanged: (
           )}
         </div>
       </div>
+      {confirmingDelete && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-red-50 px-3 py-2 ring-1 ring-red-200" role="group" aria-label={`Confirm deleting ${category.name}`}>
+          <p className="text-sm text-red-800">Delete “{category.name}”? This cannot be undone.</p>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setConfirmingDelete(false)}>Keep</Button>
+            <Button variant="danger" busy={remove.isPending} onClick={() => remove.mutate()}>Yes, delete</Button>
+          </div>
+        </div>
+      )}
       {error && <Alert>{error}</Alert>}
     </li>
   )

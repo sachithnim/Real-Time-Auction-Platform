@@ -2,7 +2,9 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Countdown } from '../../components/Countdown'
-import { Alert, Button, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { EmptyState } from '../../components/EmptyState'
+import { AuctionCardsSkeleton } from '../../components/Skeleton'
+import { Alert, Button, Card, StatusBadge } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { getEcho } from '../../lib/echo'
@@ -13,6 +15,7 @@ import { useAuth } from '../auth/useAuth'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useRealtimeStatus } from '../realtime/useRealtimeStatus'
 import { auctionKeys, fetchAuctions, fetchCategories, type AuctionListFilter } from './api'
+import { emptyListMessage } from './emptyList'
 import { priceLabel } from './priceLabel'
 import { WatchButton } from './WatchButton'
 
@@ -132,7 +135,7 @@ export function AuctionListPage() {
         </div>
       </div>
 
-      {auctions.isPending && <PageLoader />}
+      {auctions.isPending && <AuctionCardsSkeleton />}
       {auctions.isError && (
         <Alert>
           {friendlyMessage(parseApiError(auctions.error))}{' '}
@@ -145,15 +148,24 @@ export function AuctionListPage() {
       {auctions.data && (
         <>
           {auctions.data.data.length === 0 ? (
-            <p className="py-12 text-center text-slate-500">
-              {status === 'WATCHING' && !category
-                ? 'You are not watching any auctions yet. Use ☆ Watch on an auction to follow it.'
-                : category
-                  ? 'No auctions in this category here yet.'
-                  : 'No auctions here yet.'}
-            </p>
+            <ListEmpty
+              status={status}
+              category={category}
+              onClear={(filter) => {
+                if (filter === 'category') {
+                  setCategory(null)
+                } else {
+                  setStatus('ALL')
+                }
+                setPage(1)
+              }}
+            />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            // While another tab or page loads, the previous results stay visible but faded.
+            <div
+              className={`grid gap-4 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${auctions.isPlaceholderData ? 'pointer-events-none opacity-50' : ''}`}
+              aria-busy={auctions.isPlaceholderData}
+            >
               {auctions.data.data.map((auction) => (
                 <AuctionCard key={auction.id} auction={auction} />
               ))}
@@ -176,6 +188,27 @@ export function AuctionListPage() {
         </>
       )}
     </div>
+  )
+}
+
+function ListEmpty({ status, category, onClear }: { status: AuctionListFilter; category: string | null; onClear: (filter: 'category' | 'status') => void }) {
+  const message = emptyListMessage(status, category)
+  const clear = message.clear
+
+  return (
+    <EmptyState
+      icon={message.icon}
+      title={message.title}
+      action={
+        clear && (
+          <Button variant="secondary" onClick={() => onClear(clear)}>
+            {clear === 'category' ? 'Show all categories' : 'Show all auctions'}
+          </Button>
+        )
+      }
+    >
+      {message.body}
+    </EmptyState>
   )
 }
 

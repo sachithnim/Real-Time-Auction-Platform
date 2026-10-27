@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { Alert, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { DashboardSkeleton } from '../../components/Skeleton'
+import { Alert, Card, StatusBadge } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { resultLabels } from '../../lib/labels'
@@ -29,7 +30,7 @@ export function AdminStatisticsPage() {
   const stats = useQuery({ queryKey: adminKeys.statistics, queryFn: fetchStatistics, refetchInterval: 30_000 })
 
   if (stats.isPending) {
-    return <PageLoader />
+    return <DashboardSkeleton tiles={4} label="Loading statistics" />
   }
 
   if (stats.isError) {

@@ -60,8 +60,22 @@ describe('<AdminCategoriesPage>', () => {
 
     expect((await row('Art')).getByRole('button', { name: 'Delete' })).toBeDisabled()
     await userEvent.click((await row('Coins')).getByRole('button', { name: 'Delete' }))
+    // Deleting asks first.
+    expect(deleteCategory).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, delete' }))
 
     expect(deleteCategory).toHaveBeenCalledWith(2)
+  })
+
+  it('keeps the category when the admin changes their mind', async () => {
+    renderPage()
+
+    await userEvent.click((await row('Coins')).getByRole('button', { name: 'Delete' }))
+    expect(screen.getByText('Delete “Coins”? This cannot be undone.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Keep' }))
+
+    expect(screen.queryByText('Delete “Coins”? This cannot be undone.')).toBeNull()
+    expect(deleteCategory).not.toHaveBeenCalled()
   })
 
   it('adds a category and shows the server reason when the name is taken', async () => {

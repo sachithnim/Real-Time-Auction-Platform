@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { DashboardSkeleton, RowsSkeleton } from '../../components/Skeleton'
+import { Alert, Button, Card, StatusBadge } from '../../components/ui'
 import { useToast } from '../../components/useToast'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -57,7 +58,7 @@ export function AdminAuctionDetailPage() {
   })
 
   if (auction.isPending) {
-    return <PageLoader />
+    return <DashboardSkeleton tiles={4} label="Loading auction" />
   }
   if (auction.isError) {
     return <Alert>{friendlyMessage(parseApiError(auction.error))}</Alert>
@@ -169,7 +170,7 @@ function AdminBids({ auctionId }: { auctionId: number }) {
   const bids = useQuery({ queryKey: adminKeys.bids(auctionId), queryFn: () => fetchAdminBids(auctionId) })
 
   if (bids.isPending) {
-    return <PageLoader />
+    return <RowsSkeleton rows={4} label="Loading bids" />
   }
   if (!bids.data || bids.data.data.length === 0) {
     return <p className="text-sm text-slate-500">No bids.</p>

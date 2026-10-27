@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { stackedTable } from '../../components/stackedTable'
-import { Alert, Card, PageLoader } from '../../components/ui'
+import { DashboardSkeleton } from '../../components/Skeleton'
+import { Alert, Card } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRemaining, inAntiSnipeWindow, remaining } from '../../lib/countdown'
@@ -18,7 +19,7 @@ export function AdminMonitorPage() {
   const { monitor, realtime } = useAdminMonitor()
 
   if (monitor.isPending) {
-    return <PageLoader />
+    return <DashboardSkeleton label="Loading the live monitor" />
   }
 
   if (monitor.isError) {
