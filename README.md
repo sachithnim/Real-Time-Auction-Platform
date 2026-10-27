@@ -7,6 +7,18 @@ The backend is the single authority on bid validity, and every bid is processed 
 The system supports proxy (automatic) bidding, dynamic bid increments, anti-sniping extensions,
 private reserve prices and real-time updates over WebSockets.
 
+## Screenshots
+
+| Auction list | Live auction with automatic bidding |
+|---|---|
+| ![Auction list with live countdowns, categories and a watchlist filter](docs/images/screenshots/auction-list.png) | ![Live auction: current price, server-synced countdown, private maximum and pseudonymous bid history](docs/images/screenshots/live-auction.png) |
+| **Winner checkout (simulated payment)** | **Admin live monitor** |
+| ![Winner's simulated checkout after an auction is sold](docs/images/screenshots/checkout.png) | ![Admin live monitor: every running auction with leader, reserve status and recent rejected bids](docs/images/screenshots/admin-live-monitor.png) |
+| **Suspicious bidding flags** | **Statistics** |
+| ![Admin review of suspicious bidding flags](docs/images/screenshots/admin-flags.png) | ![Platform statistics: sell-through, revenue, results and bidding activity](docs/images/screenshots/admin-statistics.png) |
+
+Bidders only ever see per-auction pseudonyms ("Bidder 2"); real names and emails appear on admin screens only.
+
 ## Stack
 
 | Layer     | Technology                                                           |
@@ -22,7 +34,7 @@ private reserve prices and real-time updates over WebSockets.
 backend/            Laravel REST API
 frontend/           React + TypeScript SPA (Vite)
 docker/             Docker files and init scripts
-docs/images/        Architecture and database diagrams
+docs/images/        Architecture and database diagrams, app screenshots
 docker-compose.yml  Whole stack: MySQL, Redis, API, queue, scheduler, Reverb, frontend
 ```
 
