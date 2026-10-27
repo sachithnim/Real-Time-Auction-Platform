@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { stackedTable } from '../../components/stackedTable'
 import { Alert, Card, PageLoader } from '../../components/ui'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRemaining, inAntiSnipeWindow, remaining } from '../../lib/countdown'
@@ -43,8 +44,8 @@ export function AdminMonitorPage() {
       </div>
 
       <Card className="overflow-x-auto p-0">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <table className={stackedTable.table}>
+          <thead className={stackedTable.head}>
             <tr>
               <th className="px-4 py-3">Auction</th>
               <th className="px-4 py-3 text-right">Price</th>
@@ -55,13 +56,13 @@ export function AdminMonitorPage() {
               <th className="px-4 py-3 text-right">Ends in</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className={stackedTable.body}>
             {auctions.map((auction) => (
               <AuctionRow key={auction.id} auction={auction} />
             ))}
             {auctions.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-500">No auctions are live right now.</td>
+              <tr className="block md:table-row">
+                <td colSpan={7} className={stackedTable.emptyCell}>No auctions are live right now.</td>
               </tr>
             )}
           </tbody>
@@ -100,8 +101,8 @@ export function AdminMonitorPage() {
 
 function AuctionRow({ auction }: { auction: MonitorAuction }) {
   return (
-    <tr className="hover:bg-slate-50">
-      <td className="px-4 py-3">
+    <tr className={stackedTable.row}>
+      <td className={stackedTable.titleCell}>
         <Link to={`/admin/auctions/${auction.id}`} className="font-medium text-indigo-700 hover:underline">
           #{auction.id} {auction.title}
         </Link>
@@ -109,14 +110,14 @@ function AuctionRow({ auction }: { auction: MonitorAuction }) {
           <div className="text-xs text-slate-500">Extended {auction.extensions_count} of {auction.max_extensions}</div>
         )}
       </td>
-      <td className="px-4 py-3 text-right tabular-nums">
+      <td data-label="Price" className={`${stackedTable.cell} text-right tabular-nums`}>
         {auction.current_price === null ? (
           <span className="text-slate-500">Starts at {formatRs(auction.starting_price)}</span>
         ) : (
           <span className="font-semibold">{formatRs(auction.current_price)}</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td data-label="Reserve" className={stackedTable.cell}>
         {auction.reserve_price === null ? (
           <span className="text-slate-500">No reserve</span>
         ) : (
@@ -125,22 +126,24 @@ function AuctionRow({ auction }: { auction: MonitorAuction }) {
           </span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td data-label="Leader" className={stackedTable.cell}>
         {auction.leader === null ? (
           <span className="text-slate-500">No bids yet</span>
         ) : (
-          <>
+          <div className="min-w-0 text-right md:text-left">
             <div className="font-medium">{auction.leader.name}</div>
-            <div className="text-xs text-slate-500">{auction.leader.email} · shown as {auction.leader.pseudonym}</div>
-          </>
+            <div className="text-xs break-all text-slate-500">{auction.leader.email} · shown as {auction.leader.pseudonym}</div>
+          </div>
         )}
       </td>
-      <td className="px-4 py-3 text-right tabular-nums">
-        <div>{auction.bids_count}</div>
-        <div className="text-xs text-slate-500">{auction.recent_bids} in 5 min</div>
+      <td data-label="Bids" className={`${stackedTable.cell} text-right tabular-nums`}>
+        <div>
+          <div>{auction.bids_count}</div>
+          <div className="text-xs text-slate-500">{auction.recent_bids} in 5 min</div>
+        </div>
       </td>
-      <td className="px-4 py-3 text-right tabular-nums">{auction.active_auto_bids}</td>
-      <td className="px-4 py-3 text-right">
+      <td data-label="Auto-bids" className={`${stackedTable.cell} text-right tabular-nums`}>{auction.active_auto_bids}</td>
+      <td data-label="Ends in" className={`${stackedTable.cell} text-right`}>
         <TimeLeft endAt={auction.end_at} antiSnipeSeconds={auction.anti_snipe_seconds} />
       </td>
     </tr>

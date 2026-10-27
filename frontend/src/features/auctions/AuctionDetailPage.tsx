@@ -51,7 +51,7 @@ export function AuctionDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <h1 className="text-2xl font-bold">{a.title}</h1>
             <StatusBadge status={a.status} />
             <WatchButton auction={a} />
@@ -74,7 +74,8 @@ export function AuctionDetailPage() {
           <BidHistory auctionId={auctionId} />
         </div>
 
-        <div className="space-y-6">
+        {/* Price, countdown and the bid form come first on phones; beside the history on wide screens. */}
+        <div className="order-first space-y-6 lg:order-none">
           <Card className="space-y-4">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">

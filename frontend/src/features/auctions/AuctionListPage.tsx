@@ -109,7 +109,7 @@ export function AuctionListPage() {
             ))}
           </select>
         </label>
-        <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist">
           {visibleTabs.map((tab) => (
             <button
               key={tab.value}
@@ -120,7 +120,7 @@ export function AuctionListPage() {
                 setStatus(tab.value)
                 setPage(1)
               }}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium ${status === tab.value ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium ${status === tab.value ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               {tab.label}
             </button>
