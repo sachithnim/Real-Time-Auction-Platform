@@ -72,6 +72,7 @@ export function AdminAuctionDetailPage() {
             <h1 className="text-2xl font-bold">#{a.id} {a.title}</h1>
             <StatusBadge status={a.status} />
           </div>
+          <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">{a.category?.name ?? 'No category'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {a.status !== 'DRAFT' && <Button variant="secondary" onClick={() => navigate(`/auctions/${a.id}`)}>View as bidder</Button>}

@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router'
 import { Alert, Button, Card, Field, PageLoader } from '../../components/ui'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
 import type { AdminAuction } from '../../types/api'
-import { adminKeys, createAuction, fetchAdminAuction, updateAuction, type AuctionInput } from './api'
+import { adminKeys, createAuction, fetchAdminAuction, fetchAdminCategories, updateAuction, type AuctionInput } from './api'
 import { auctionFormSchema, isoToLocalInput, localInputToIso, type AuctionFormValues } from './auctionForm'
 
 export function AdminAuctionFormPage() {
@@ -26,11 +26,12 @@ export function AdminAuctionFormPage() {
 
 function defaults(auction: AdminAuction | null): Partial<AuctionFormValues> {
   if (!auction) {
-    return { anti_snipe_seconds: 120, extension_seconds: 120, max_extensions: 3, min_increment: 100, reserve_price: null }
+    return { anti_snipe_seconds: 120, extension_seconds: 120, max_extensions: 3, min_increment: 100, reserve_price: null, category_id: null }
   }
   return {
     title: auction.title,
     description: auction.description,
+    category_id: auction.category_id,
     starting_price: auction.starting_price,
     reserve_price: auction.reserve_price,
     min_increment: auction.min_increment,
@@ -50,6 +51,7 @@ function AuctionForm({ auction }: { auction: AdminAuction | null }) {
   const [error, setError] = useState<string | null>(null)
   const form = useForm<AuctionFormValues>({ resolver: zodResolver(auctionFormSchema), defaultValues: defaults(auction) })
   const errors = form.formState.errors
+  const categories = useQuery({ queryKey: adminKeys.categories, queryFn: fetchAdminCategories })
 
   const save = (status: 'DRAFT' | 'SCHEDULED') =>
     form.handleSubmit(async (values) => {
@@ -86,6 +88,22 @@ function AuctionForm({ auction }: { auction: AdminAuction | null }) {
             <label htmlFor="description" className="block text-sm font-medium text-slate-700">Description</label>
             <textarea id="description" rows={4} className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm" {...form.register('description')} />
             {errors.description && <p role="alert" className="text-xs text-red-600">{errors.description.message}</p>}
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="category_id" className="block text-sm font-medium text-slate-700">Category</label>
+            <select
+              // Re-attach once the options exist, so an edited auction keeps its saved category.
+              key={categories.data ? 'loaded' : 'loading'}
+              id="category_id"
+              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+              {...form.register('category_id', { setValueAs: (v) => (v === '' || v === null ? null : Number(v)) })}
+            >
+              <option value="">No category</option>
+              {categories.data?.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {errors.category_id && <p role="alert" className="text-xs text-red-600">{errors.category_id.message}</p>}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">

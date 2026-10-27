@@ -1,6 +1,6 @@
 import { api } from '../../lib/api'
 import type { AuditUsers } from './auditFormat'
-import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, CursorPage, FlagStatus, MonitorSnapshot, Paginated, Single } from '../../types/api'
+import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, Category, CursorPage, FlagStatus, MonitorSnapshot, Paginated, Single } from '../../types/api'
 
 export const adminKeys = {
   all: ['admin'] as const,
@@ -11,11 +11,13 @@ export const adminKeys = {
   statistics: ['admin', 'statistics'] as const,
   monitor: ['admin', 'monitor'] as const,
   flags: (status: FlagStatus | 'ALL') => ['admin', 'flags', status] as const,
+  categories: ['admin', 'categories'] as const,
 }
 
 export interface AuctionInput {
   title: string
   description: string
+  category_id?: number | null
   starting_price: number
   reserve_price: number | null
   min_increment: number
@@ -75,6 +77,25 @@ export async function fetchStatistics() {
 export async function fetchMonitor() {
   const { data } = await api.get<Single<MonitorSnapshot>>('/api/admin/monitor')
   return data.data
+}
+
+export async function fetchAdminCategories() {
+  const { data } = await api.get<{ data: Category[] }>('/api/admin/categories')
+  return data.data
+}
+
+export async function createCategory(name: string) {
+  const { data } = await api.post<Single<Category>>('/api/admin/categories', { name })
+  return data.data
+}
+
+export async function renameCategory(id: number, name: string) {
+  const { data } = await api.put<Single<Category>>(`/api/admin/categories/${id}`, { name })
+  return data.data
+}
+
+export async function deleteCategory(id: number) {
+  await api.delete(`/api/admin/categories/${id}`)
 }
 
 export async function fetchFlags(status: FlagStatus | 'ALL') {
