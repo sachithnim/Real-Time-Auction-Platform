@@ -3,7 +3,8 @@ import { useEffect } from 'react'
 import { useParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { NotFoundPage } from '../../components/NotFoundPage'
-import { Alert, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { AuctionDetailSkeleton } from '../../components/Skeleton'
+import { Alert, Card, StatusBadge } from '../../components/ui'
 import { useChangeCount } from '../../components/useChangeCount'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -32,7 +33,7 @@ export function AuctionDetailPage() {
   useRefreshAtBoundaries(auction.data)
 
   if (auction.isPending) {
-    return <PageLoader />
+    return <AuctionDetailSkeleton />
   }
 
   if (auction.isError) {

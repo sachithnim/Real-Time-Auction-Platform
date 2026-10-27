@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { formatRs } from '../../lib/money'
 import { serverNow } from '../../lib/serverClock'
 import { formatRelative } from '../../lib/time'
-import { Card, PageLoader } from '../../components/ui'
+import { RowsSkeleton } from '../../components/Skeleton'
+import { Card } from '../../components/ui'
 import { auctionKeys, fetchBidHistory } from './api'
 
 export function BidHistory({ auctionId }: { auctionId: number }) {
@@ -25,7 +26,7 @@ export function BidHistory({ auctionId }: { auctionId: number }) {
   return (
     <Card>
       <h2 className="mb-3 font-semibold">Bid history</h2>
-      {history.isPending && <PageLoader />}
+      {history.isPending && <RowsSkeleton rows={4} label="Loading bid history" />}
       {history.isError && <p className="text-sm text-red-600">Could not load the bid history.</p>}
       {history.data && history.data.data.length === 0 && <p className="text-sm text-slate-500">No bids yet. Be the first!</p>}
       {history.data && history.data.data.length > 0 && (
