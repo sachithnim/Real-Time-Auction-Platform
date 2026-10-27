@@ -73,6 +73,20 @@ export function AdminAuctionDetailPage() {
             <StatusBadge status={a.status} />
           </div>
           <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">{a.category?.name ?? 'No category'}</p>
+          {a.payment && (
+            <p className="mt-1 text-sm">
+              Payment:{' '}
+              {a.payment.status === 'PAID' ? (
+                <span className="font-medium text-emerald-700">
+                  Paid {formatRs(a.payment.amount)} by {a.payment.card_brand} •••• {a.payment.card_last4} (receipt {a.payment.reference})
+                </span>
+              ) : a.payment.status === 'FAILED' ? (
+                <span className="font-medium text-red-700">Last attempt declined ({a.payment.failure_reason}); awaiting payment</span>
+              ) : (
+                <span className="font-medium text-amber-700">Awaiting payment of {formatRs(a.payment.amount)}</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {a.status !== 'DRAFT' && <Button variant="secondary" onClick={() => navigate(`/auctions/${a.id}`)}>View as bidder</Button>}
