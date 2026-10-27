@@ -1,5 +1,5 @@
 # PHP runtime for the Laravel API (development).
-FROM php:8.4-cli
+FROM php:8.5-cli
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git unzip libzip-dev libicu-dev \
