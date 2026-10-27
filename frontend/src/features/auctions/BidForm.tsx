@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useToast } from '../../components/useToast'
 import { Alert, Button, Field } from '../../components/ui'
 import { newIdempotencyKey } from '../../lib/api'
@@ -11,6 +11,7 @@ import { retrySameKey } from '../../lib/retry'
 import type { Auction } from '../../types/api'
 import { auctionKeys, placeBid } from './api'
 import { bidSchema, type BidValues } from './bidSchema'
+import { quickBidAmounts } from './quickBids'
 
 export function BidForm({ auction }: { auction: Auction }) {
   const queryClient = useQueryClient()
@@ -60,6 +61,8 @@ export function BidForm({ auction }: { auction: Auction }) {
     },
   })
 
+  const chosen = useWatch({ control: form.control, name: 'amount' })
+
   const onSubmit = form.handleSubmit((values) => {
     setError(null)
     mutation.mutate(values.amount)
@@ -78,6 +81,20 @@ export function BidForm({ auction }: { auction: Auction }) {
         error={form.formState.errors.amount?.message}
         hint={`Minimum ${formatRs(minimum)}`}
       />
+      {/* Fills the box only: the bid is placed with the button below, never by a single tap. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Quick amounts">
+        {quickBidAmounts(auction).map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            aria-pressed={chosen === amount}
+            onClick={() => form.setValue('amount', amount, { shouldDirty: true, shouldValidate: true })}
+            className={`rounded-full px-3 py-1 text-xs font-medium tabular-nums ring-1 transition ${chosen === amount ? 'bg-indigo-50 text-indigo-700 ring-indigo-300' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'}`}
+          >
+            {formatRs(amount)}
+          </button>
+        ))}
+      </div>
       <Button type="submit" busy={mutation.isPending} className="w-full">
         {mutation.isPending ? 'Placing bid…' : 'Place bid'}
       </Button>
