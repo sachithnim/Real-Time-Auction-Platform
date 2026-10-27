@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { stackedTable } from '../../components/stackedTable'
 import { Alert, Button, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRs } from '../../lib/money'
 import type { AuctionStatus } from '../../types/api'
@@ -11,6 +12,7 @@ import { adminKeys, fetchAdminAuctions } from './api'
 const statuses: (AuctionStatus | 'ALL')[] = ['ALL', 'DRAFT', 'SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']
 
 export function AdminAuctionsPage() {
+  useDocumentTitle('Manage auctions')
   const [status, setStatus] = useState<AuctionStatus | 'ALL'>('ALL')
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
@@ -72,7 +74,7 @@ export function AdminAuctionsPage() {
                   </td>
                   <td data-label="Status" className={stackedTable.cell}><StatusBadge status={a.status} /></td>
                   <td data-label="Price" className={`${stackedTable.cell} text-right tabular-nums`}>{formatRs(a.current_price ?? a.starting_price)}</td>
-                  <td data-label="Reserve" className={`${stackedTable.cell} text-right tabular-nums text-slate-500`}>{formatRs(a.reserve_price)}</td>
+                  <td data-label="Reserve" className={`${stackedTable.cell} text-right tabular-nums text-slate-500`}>{a.reserve_price === null ? 'None' : formatRs(a.reserve_price)}</td>
                   <td data-label="Bids" className={`${stackedTable.cell} text-right`}>{a.bids_count}</td>
                   <td data-label="Starts" className={`${stackedTable.cell} text-slate-600`}>{new Date(a.start_at).toLocaleString()}</td>
                   <td data-label="Ends" className={`${stackedTable.cell} text-slate-600`}>{new Date(a.end_at).toLocaleString()}</td>

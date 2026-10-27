@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router'
 import { Alert, Button, Card, Field, PageLoader } from '../../components/ui'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
 import type { AdminAuction } from '../../types/api'
 import { adminKeys, createAuction, fetchAdminAuction, fetchAdminCategories, updateAuction, type AuctionInput } from './api'
@@ -11,6 +12,7 @@ import { auctionFormSchema, isoToLocalInput, localInputToIso, type AuctionFormVa
 
 export function AdminAuctionFormPage() {
   const { id: idParam } = useParams()
+  useDocumentTitle(idParam ? `Edit auction #${idParam}` : 'New auction')
   const id = idParam ? Number(idParam) : null
   const existing = useQuery({ queryKey: adminKeys.detail(id ?? 0), queryFn: () => fetchAdminAuction(id!), enabled: id !== null })
 

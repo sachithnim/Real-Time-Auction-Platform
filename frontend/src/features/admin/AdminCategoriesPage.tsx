@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Alert, Button, Card, PageLoader } from '../../components/ui'
 import { useToast } from '../../components/useToast'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
 import type { Category } from '../../types/api'
 import { adminKeys, createCategory, deleteCategory, fetchAdminCategories, renameCategory } from './api'
@@ -14,6 +15,7 @@ function saveError(error: unknown): string {
 
 /** Admin management of auction categories (bonus challenge: multiple auction categories). */
 export function AdminCategoriesPage() {
+  useDocumentTitle('Categories')
   const queryClient = useQueryClient()
   const categories = useQuery({ queryKey: adminKeys.categories, queryFn: fetchAdminCategories })
   const [name, setName] = useState('')
