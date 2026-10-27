@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\AuctionResult;
 use App\Models\Auction;
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -21,8 +22,10 @@ class DemoAuctionSeeder extends Seeder
 
         $admin = User::where('email', UserSeeder::ADMIN_EMAIL)->firstOrFail();
         $factory = Auction::factory()->for($admin, 'creator');
+        $category = fn (string $name) => Category::where('slug', Category::slugFor($name))->value('id');
 
         $factory->create([
+            'category_id' => $category('Antiques'),
             'title' => 'Antique Brass Telescope',
             'description' => 'Hand-polished 19th century brass telescope with leather grip. Draft: not yet published.',
             'starting_price' => 15_000,
@@ -30,6 +33,7 @@ class DemoAuctionSeeder extends Seeder
         ]);
 
         $factory->scheduled()->create([
+            'category_id' => $category('Sports memorabilia'),
             'title' => 'Signed Cricket Bat',
             'description' => 'Bat signed by the 1996 World Cup winning squad, with certificate of authenticity.',
             'starting_price' => 50_000,
@@ -40,6 +44,7 @@ class DemoAuctionSeeder extends Seeder
         ]);
 
         $factory->live()->create([
+            'category_id' => $category('Antiques'),
             'title' => 'Vintage Ceylon Tea Chest',
             'description' => 'Teak tea chest from a Nuwara Eliya estate, circa 1920. Reserve applies.',
             'starting_price' => 20_000,
@@ -51,6 +56,7 @@ class DemoAuctionSeeder extends Seeder
         ]);
 
         $factory->live()->withoutReserve()->create([
+            'category_id' => $category('Art'),
             'title' => 'Hand-Carved Kandyan Mask',
             'description' => 'Traditional Kolam mask carved from kaduru wood. No reserve.',
             'starting_price' => 5_000,
@@ -60,6 +66,7 @@ class DemoAuctionSeeder extends Seeder
         ]);
 
         $factory->completed(AuctionResult::NoBids)->create([
+            'category_id' => $category('Home & furniture'),
             'title' => 'Mid-Century Rosewood Desk',
             'description' => 'Rosewood writing desk with brass fittings. Ended without bids.',
             'starting_price' => 80_000,

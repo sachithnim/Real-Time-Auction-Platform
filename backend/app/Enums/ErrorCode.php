@@ -26,6 +26,7 @@ enum ErrorCode: string
     case AuctionNotLive = 'AUCTION_NOT_LIVE';
     case InvalidTransition = 'INVALID_TRANSITION';
     case AuctionNotEditable = 'AUCTION_NOT_EDITABLE';
+    case CategoryInUse = 'CATEGORY_IN_USE';
 
     // Bidding
     case InvalidBid = 'INVALID_BID';
@@ -51,6 +52,7 @@ enum ErrorCode: string
             self::AuctionNotLive,
             self::InvalidTransition,
             self::AuctionNotEditable,
+            self::CategoryInUse,
             self::BidConflictRetry,
             self::DuplicateRequest => 409,
 

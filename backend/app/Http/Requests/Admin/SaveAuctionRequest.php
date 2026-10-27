@@ -25,6 +25,7 @@ class SaveAuctionRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:150'],
             'description' => ['required', 'string', 'max:5000'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'starting_price' => ['required', 'integer:strict', 'min:1', 'max:'.self::MAX_MONEY],
             'reserve_price' => ['nullable', 'integer:strict', 'gte:starting_price', 'max:'.self::MAX_MONEY],
             'min_increment' => ['required', 'integer:strict', 'min:1', 'max:'.self::MAX_MONEY],

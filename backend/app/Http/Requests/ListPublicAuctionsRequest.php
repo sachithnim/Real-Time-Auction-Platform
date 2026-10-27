@@ -17,6 +17,8 @@ class ListPublicAuctionsRequest extends FormRequest
             // Drafts are never listed publicly.
             'status' => ['nullable', Rule::enum(AuctionStatus::class)->except([AuctionStatus::Draft])],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            // A category slug, e.g. ?category=antiques
+            'category' => ['nullable', 'string', 'exists:categories,slug'],
             // Only the signed-in bidder's own watchlist.
             'watching' => ['nullable', 'boolean'],
         ];

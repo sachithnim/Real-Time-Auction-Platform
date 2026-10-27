@@ -200,6 +200,7 @@ class AuctionLifecycleService
         return [
             'title' => $auction->title,
             'description' => $auction->description,
+            'category_id' => $auction->category_id,
             'starting_price' => $auction->starting_price,
             'reserve_price' => $auction->reserve_price,
             'min_increment' => $auction->min_increment,

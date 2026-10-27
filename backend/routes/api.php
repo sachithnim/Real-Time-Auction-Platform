@@ -3,12 +3,14 @@
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\AuctionHistoryController;
 use App\Http\Controllers\Admin\BidFlagController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\MonitorController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\ScanBiddingActivity;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +30,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // Public: guests and bidders can browse auctions.
+Route::get('categories', [CategoryController::class, 'index']);
 Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
 Route::get('auctions/{auction}/bids', [BidController::class, 'index']);
@@ -56,6 +59,10 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::get('auctions/{auction}/events', [AuctionHistoryController::class, 'events']);
     Route::get('statistics', [StatisticsController::class, 'index']);
     Route::get('monitor', [MonitorController::class, 'index']);
+    Route::get('categories', [AdminCategoryController::class, 'index']);
+    Route::post('categories', [AdminCategoryController::class, 'store']);
+    Route::put('categories/{category}', [AdminCategoryController::class, 'update']);
+    Route::delete('categories/{category}', [AdminCategoryController::class, 'destroy']);
     Route::get('flags', [BidFlagController::class, 'index']);
     Route::post('flags/{flag}/review', [BidFlagController::class, 'review']);
 });

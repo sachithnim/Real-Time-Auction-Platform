@@ -24,6 +24,10 @@ class AdminAuctionResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'category_id' => $this->category_id,
+            'category' => $this->category === null ? null : [
+                'id' => $this->category->id, 'name' => $this->category->name, 'slug' => $this->category->slug,
+            ],
             'status' => $this->status->value,
             'result' => $this->result?->value,
             'starting_price' => $this->starting_price,
