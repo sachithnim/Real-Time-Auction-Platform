@@ -13,14 +13,24 @@ class UserSeeder extends Seeder
 {
     public const ADMIN_EMAIL = 'admin@auction.test';
 
-    public const BIDDER_COUNT = 5;
+    /**
+     * Real-looking names, so they are never mistaken for the per-auction
+     * pseudonyms ("Bidder 2") that bidders see instead of names.
+     */
+    public const BIDDER_NAMES = [
+        'Asha Perera',
+        'Nimal Silva',
+        'Kavindi Fernando',
+        'Ruwan Jayasinghe',
+        'Dilini Wickramasinghe',
+    ];
 
     public function run(): void
     {
         $this->seedUser('Platform Admin', self::ADMIN_EMAIL, UserRole::Admin);
 
-        for ($i = 1; $i <= self::BIDDER_COUNT; $i++) {
-            $this->seedUser("Bidder {$i}", "bidder{$i}@auction.test", UserRole::Bidder);
+        foreach (self::BIDDER_NAMES as $i => $name) {
+            $this->seedUser($name, 'bidder'.($i + 1).'@auction.test', UserRole::Bidder);
         }
     }
 
