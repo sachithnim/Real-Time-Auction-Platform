@@ -1,0 +1,49 @@
+# Keeps dependencies current. Dependabot opens one pull request per group each
+# week; CI runs on it like any other PR, and nothing merges without a green build.
+version: 2
+
+updates:
+  # Laravel API (Composer)
+  - package-ecosystem: composer
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Minor and patch releases together, so a quiet week is one PR, not ten.
+      backend-minor-and-patch:
+        update-types: [minor, patch]
+
+  # React app (npm)
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      frontend-minor-and-patch:
+        update-types: [minor, patch]
+
+  # Workflow actions (checkout, setup-php, setup-node, cache)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "ci(deps)"
+
+  # PHP base image used by the backend, queue, scheduler and Reverb containers
+  - package-ecosystem: docker
+    directory: /docker/php
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(deps)"
