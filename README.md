@@ -73,10 +73,17 @@ ports 8000 and 5173.
 
 All demo accounts use the password `password` (local development only).
 
-| Role   | Email                                           |
-|--------|-------------------------------------------------|
-| Admin  | `admin@auction.test`                            |
-| Bidder | `bidder1@auction.test` … `bidder5@auction.test` |
+| Role   | Email                  | Name                  |
+|--------|------------------------|-----------------------|
+| Admin  | `admin@auction.test`   | Platform Admin        |
+| Bidder | `bidder1@auction.test` | Asha Perera           |
+| Bidder | `bidder2@auction.test` | Nimal Silva           |
+| Bidder | `bidder3@auction.test` | Kavindi Fernando      |
+| Bidder | `bidder4@auction.test` | Ruwan Jayasinghe      |
+| Bidder | `bidder5@auction.test` | Dilini Wickramasinghe |
+
+Bidders never see each other's names: in an auction they appear as per-auction pseudonyms ("Bidder 2"). Only admins
+see real names.
 
 The seeders create the bid increment tiers and one demo auction in each lifecycle state (draft, scheduled,
 live, completed). Reset the demo data at any time with
