@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { stackedTable } from '../../components/stackedTable'
 import { Alert, Card, PageLoader } from '../../components/ui'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRemaining, inAntiSnipeWindow, remaining } from '../../lib/countdown'
 import { formatRs } from '../../lib/money'
@@ -13,6 +14,7 @@ import { useAdminMonitor } from './useAdminMonitor'
 
 /** Every running auction, updated as bids arrive (bonus challenge: admin live monitoring). */
 export function AdminMonitorPage() {
+  useDocumentTitle('Live monitor')
   const { monitor, realtime } = useAdminMonitor()
 
   if (monitor.isPending) {

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { Alert, Button, Card, PageLoader } from '../../components/ui'
 import { useToast } from '../../components/useToast'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import type { BidFlag, FlagStatus } from '../../types/api'
 import { adminKeys, fetchFlags, reviewFlag } from './api'
@@ -16,6 +17,7 @@ const tabs: { value: FlagStatus | 'ALL'; label: string }[] = [
 
 /** Suspicious bidding flags for review (bonus challenge: suspicious bidding detection). */
 export function AdminFlagsPage() {
+  useDocumentTitle('Suspicious bidding')
   const [status, setStatus] = useState<FlagStatus | 'ALL'>('OPEN')
   const flags = useQuery({
     queryKey: adminKeys.flags(status),

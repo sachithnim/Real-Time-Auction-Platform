@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { Alert, Button, Card, Field } from '../../components/ui'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
 import { useAuth } from './useAuth'
 
@@ -15,6 +16,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>
 
 export function LoginPage() {
+  useDocumentTitle('Log in')
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

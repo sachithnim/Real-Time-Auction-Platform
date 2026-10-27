@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { Alert, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { resultLabels } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
@@ -24,6 +25,7 @@ const resultBars: { key: 'sold' | 'reserve_not_met' | 'no_bids'; result: Auction
 
 /** Platform-wide figures for admins (bonus challenge: auction statistics). */
 export function AdminStatisticsPage() {
+  useDocumentTitle('Statistics')
   const stats = useQuery({ queryKey: adminKeys.statistics, queryFn: fetchStatistics, refetchInterval: 30_000 })
 
   if (stats.isPending) {
