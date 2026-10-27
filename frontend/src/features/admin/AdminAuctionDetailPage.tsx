@@ -68,7 +68,7 @@ export function AdminAuctionDetailPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link to="/admin/auctions" className="text-sm text-indigo-600 hover:underline">← All auctions</Link>
-          <div className="mt-1 flex items-center gap-3">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-2xl font-bold">#{a.id} {a.title}</h1>
             <StatusBadge status={a.status} />
           </div>
