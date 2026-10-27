@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Alert, Button, Card, PageLoader, StatusBadge } from '../../components/ui'
 import { useToast } from '../../components/useToast'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { getEcho } from '../../lib/echo'
 import { resultLabels } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
+import { formatDuration } from '../../lib/time'
 import { AUCTION_EVENTS } from '../realtime/auctionEvents'
 import { adminKeys, cancelAuction, fetchAdminAuction, fetchAdminBids, scheduleAuction } from './api'
 import { AuditLog } from './AuditLog'
@@ -19,6 +21,7 @@ export function AdminAuctionDetailPage() {
   const [tab, setTab] = useState<'audit' | 'bids'>('audit')
   const [cancelReason, setCancelReason] = useState<string | null>(null)
   const auction = useQuery({ queryKey: adminKeys.detail(id), queryFn: () => fetchAdminAuction(id) })
+  useDocumentTitle(auction.data ? `#${auction.data.id} ${auction.data.title}` : `Auction #${id}`)
 
   // Live: any change to this auction refreshes the admin view.
   useEffect(() => {
@@ -116,13 +119,20 @@ export function AdminAuctionDetailPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Current price" value={formatRs(a.current_price)} />
-        <Stat label="Reserve (private)" value={formatRs(a.reserve_price)} />
+        <Stat label="Reserve (private)" value={a.reserve_price === null ? 'No reserve' : formatRs(a.reserve_price)} />
         <Stat label="Result" value={a.result ? `${resultLabels[a.result]}${a.final_price ? ` · ${formatRs(a.final_price)}` : ''}` : '—'} />
         <Stat label="Bids" value={String(a.bids_count)} />
         <Stat label="Starts" value={new Date(a.start_at).toLocaleString()} />
         <Stat label="Ends" value={new Date(a.end_at).toLocaleString()} />
         <Stat label="Original end" value={new Date(a.original_end_at).toLocaleString()} />
-        <Stat label="Extensions" value={`${a.extensions_count} of ${a.max_extensions} (${a.anti_snipe_seconds}s window, +${a.extension_seconds}s)`} />
+        <Stat
+          label="Extensions"
+          value={
+            a.anti_snipe_seconds === 0
+              ? 'Anti-sniping off'
+              : `${a.extensions_count} of ${a.max_extensions} · last ${formatDuration(a.anti_snipe_seconds)} adds ${formatDuration(a.extension_seconds)}`
+          }
+        />
       </div>
 
       <Card>
