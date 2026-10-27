@@ -5,9 +5,11 @@ import { Countdown } from '../../components/Countdown'
 import { NotFoundPage } from '../../components/NotFoundPage'
 import { Alert, Card, PageLoader, StatusBadge } from '../../components/ui'
 import { useChangeCount } from '../../components/useChangeCount'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRs } from '../../lib/money'
 import { serverNow } from '../../lib/serverClock'
+import { formatDuration } from '../../lib/time'
 import type { Auction } from '../../types/api'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useAuctionChannel } from '../realtime/useAuctionChannel'
@@ -17,6 +19,7 @@ import { BiddingPanel } from './BiddingPanel'
 import { BidHistory } from './BidHistory'
 import { CheckoutPanel } from './CheckoutPanel'
 import { leaderBadge } from './leaderBadge'
+import { priceLabel } from './priceLabel'
 import { WatchButton } from './WatchButton'
 
 /** The live auction screen. */
@@ -24,6 +27,7 @@ export function AuctionDetailPage() {
   const auctionId = Number(useParams().id)
   const auction = useQuery({ queryKey: auctionKeys.detail(auctionId), queryFn: () => fetchAuction(auctionId) })
   const realtime = useAuctionChannel(auctionId)
+  useDocumentTitle(auction.data?.title)
 
   useRefreshAtBoundaries(auction.data)
 
@@ -80,7 +84,7 @@ export function AuctionDetailPage() {
           <Card className="space-y-4">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                {a.current_price === null ? 'Starting price' : a.status === 'COMPLETED' ? 'Final bid' : 'Current price'}
+                {priceLabel(a)}
               </div>
               <LivePrice amount={a.current_price ?? a.starting_price} />
               <div className="mt-1 flex flex-wrap gap-2 text-xs">
@@ -112,7 +116,7 @@ export function AuctionDetailPage() {
               {a.extensions_count > 0 && <Row label="Originally ended" value={new Date(a.original_end_at).toLocaleString()} />}
               {a.anti_snipe_seconds > 0 && (
                 <>
-                  <Row label="Anti-sniping" value={`Bids in the last ${Math.round(a.anti_snipe_seconds / 60 * 10) / 10} min add ${Math.round(a.extension_seconds / 60 * 10) / 10} min`} />
+                  <Row label="Anti-sniping" value={`Bids in the last ${formatDuration(a.anti_snipe_seconds)} add ${formatDuration(a.extension_seconds)}`} />
                   <Row label="Extensions used" value={`${a.extensions_count} of ${a.max_extensions}`} />
                 </>
               )}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { Alert, Button, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { getEcho } from '../../lib/echo'
 import { resultLabels } from '../../lib/labels'
@@ -12,6 +13,7 @@ import { useAuth } from '../auth/useAuth'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useRealtimeStatus } from '../realtime/useRealtimeStatus'
 import { auctionKeys, fetchAuctions, fetchCategories, type AuctionListFilter } from './api'
+import { priceLabel } from './priceLabel'
 import { WatchButton } from './WatchButton'
 
 const tabs: { value: AuctionListFilter; label: string }[] = [
@@ -34,6 +36,7 @@ interface ListingUpdate {
 }
 
 export function AuctionListPage() {
+  useDocumentTitle('Auctions')
   const { user } = useAuth()
   const isBidder = user?.role === 'BIDDER'
   const visibleTabs = isBidder ? [...tabs, watchingTab] : tabs
@@ -177,21 +180,27 @@ export function AuctionListPage() {
 }
 
 function AuctionCard({ auction }: { auction: Auction }) {
+  const canWatch = useAuth().user?.role === 'BIDDER'
+
   return (
     <Link to={`/auctions/${auction.id}`} className="block transition hover:-translate-y-0.5">
       <Card className="h-full space-y-3 hover:ring-indigo-300">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-semibold leading-snug">{auction.title}</h2>
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="shrink-0">
             <StatusBadge status={auction.status} />
-            <WatchButton auction={auction} />
           </div>
         </div>
-        {auction.category && <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">{auction.category.name}</p>}
+        {(auction.category || canWatch) && (
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">{auction.category?.name}</p>
+            <WatchButton auction={auction} />
+          </div>
+        )}
         <p className="line-clamp-2 text-sm text-slate-600">{auction.description}</p>
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-xs text-slate-500">{auction.current_price === null ? 'Starting price' : 'Current price'}</div>
+            <div className="text-xs text-slate-500">{priceLabel(auction)}</div>
             <div className="text-lg font-bold">{formatRs(auction.current_price ?? auction.starting_price)}</div>
             <div className="text-xs text-slate-500">{auction.bids_count ?? 0} bids</div>
           </div>

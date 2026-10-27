@@ -1,11 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { formatRs } from '../../lib/money'
+import { serverNow } from '../../lib/serverClock'
+import { formatRelative } from '../../lib/time'
 import { Card, PageLoader } from '../../components/ui'
 import { auctionKeys, fetchBidHistory } from './api'
 
 export function BidHistory({ auctionId }: { auctionId: number }) {
   const history = useQuery({ queryKey: auctionKeys.bids(auctionId), queryFn: () => fetchBidHistory(auctionId) })
+
+  // "2 min ago" has to keep moving even when no new bid arrives.
+  const [now, setNow] = useState(() => serverNow())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(serverNow()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   // Bids already there when the page opened are not "new": only later ones fade in.
   const [firstIds, setFirstIds] = useState<Set<number> | null>(null)
@@ -33,8 +42,8 @@ export function BidHistory({ auctionId }: { auctionId: number }) {
               </span>
               <span className="flex items-center gap-3">
                 <span className="tabular-nums">{formatRs(bid.amount)}</span>
-                <time className="w-20 text-right text-xs text-slate-400" dateTime={bid.created_at}>
-                  {new Date(bid.created_at).toLocaleTimeString()}
+                <time className="w-24 text-right text-xs text-slate-400" dateTime={bid.created_at} title={new Date(bid.created_at).toLocaleString()}>
+                  {formatRelative(bid.created_at, now)}
                 </time>
               </span>
             </li>
