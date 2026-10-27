@@ -4,6 +4,7 @@ import { useParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { NotFoundPage } from '../../components/NotFoundPage'
 import { Alert, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { useChangeCount } from '../../components/useChangeCount'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRs } from '../../lib/money'
 import { serverNow } from '../../lib/serverClock'
@@ -81,9 +82,7 @@ export function AuctionDetailPage() {
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 {a.current_price === null ? 'Starting price' : a.status === 'COMPLETED' ? 'Final bid' : 'Current price'}
               </div>
-              <div className="text-3xl font-bold tabular-nums" data-testid="current-price">
-                {formatRs(a.current_price ?? a.starting_price)}
-              </div>
+              <LivePrice amount={a.current_price ?? a.starting_price} />
               <div className="mt-1 flex flex-wrap gap-2 text-xs">
                 {badge && (
                   <span className={`rounded-full px-2 py-0.5 font-medium ${badge.tone === 'good' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
@@ -121,6 +120,22 @@ export function AuctionDetailPage() {
           </Card>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** The price, briefly highlighted each time it changes (not on first load). */
+function LivePrice({ amount }: { amount: number }) {
+  const changes = useChangeCount(amount)
+
+  return (
+    // A new key restarts the highlight animation on every change.
+    <div
+      key={changes}
+      className={`-mx-1 rounded px-1 text-3xl font-bold tabular-nums ${changes > 0 ? 'motion-safe:animate-price-flash' : ''}`}
+      data-testid="current-price"
+    >
+      {formatRs(amount)}
     </div>
   )
 }

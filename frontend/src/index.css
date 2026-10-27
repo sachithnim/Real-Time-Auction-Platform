@@ -1,5 +1,35 @@
 @import 'tailwindcss';
 
+/* Short, one-off highlights for live changes. Used with motion-safe: so they are skipped for reduced motion. */
+@theme {
+  --animate-price-flash: price-flash 1.2s ease-out;
+  --animate-row-in: row-in 0.8s ease-out;
+
+  @keyframes price-flash {
+    0% {
+      background-color: var(--color-amber-200);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes row-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-4px);
+      background-color: var(--color-indigo-50);
+    }
+    40% {
+      opacity: 1;
+      transform: none;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+}
+
 :root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;

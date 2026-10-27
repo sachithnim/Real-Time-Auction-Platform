@@ -65,11 +65,12 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
   )
 })
 
-export function Alert({ tone = 'error', children }: { tone?: 'error' | 'info' | 'success'; children: ReactNode }) {
+export function Alert({ tone = 'error', children }: { tone?: 'error' | 'info' | 'success' | 'warning'; children: ReactNode }) {
   const tones = {
     error: 'bg-red-50 text-red-800 ring-red-200',
     info: 'bg-sky-50 text-sky-800 ring-sky-200',
     success: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+    warning: 'bg-amber-50 text-amber-900 ring-amber-200',
   }
   return (
     <div role={tone === 'error' ? 'alert' : 'status'} className={`rounded-md px-4 py-3 text-sm ring-1 ${tones[tone]}`}>

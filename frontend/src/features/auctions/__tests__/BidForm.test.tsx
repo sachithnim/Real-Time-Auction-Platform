@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, AxiosHeaders } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -150,5 +150,23 @@ describe('<BidForm>', () => {
 
     expect(await screen.findByText('This auction has ended.')).toBeInTheDocument()
     expect(placeBid).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers quick amounts from the minimum, one step apart', () => {
+    renderForm()
+
+    const quick = within(screen.getByRole('group', { name: 'Quick amounts' }))
+    expect(quick.getAllByRole('button').map((b) => b.textContent)).toEqual(['Rs. 25,500', 'Rs. 26,000', 'Rs. 26,500'])
+    expect(quick.getByRole('button', { name: 'Rs. 25,500' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('fills the box with a quick amount without placing the bid', async () => {
+    renderForm()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Rs. 26,500' }))
+
+    expect(screen.getByLabelText('Your bid (Rs.)')).toHaveValue(26_500)
+    expect(screen.getByRole('button', { name: 'Rs. 26,500' })).toHaveAttribute('aria-pressed', 'true')
+    expect(placeBid).not.toHaveBeenCalled()
   })
 })
