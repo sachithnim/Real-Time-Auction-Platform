@@ -48,11 +48,23 @@ describe('<AutoBidForm>', () => {
     renderForm()
 
     expect(await screen.findByText('Rs. 20,000')).toBeInTheDocument()
+    expect(screen.getByText('More than your current Rs. 20,000')).toBeInTheDocument()
 
     await userEvent.type(screen.getByLabelText('Raise maximum to (Rs.)'), '18000')
     await userEvent.click(screen.getByRole('button', { name: 'Raise maximum' }))
 
-    expect(await screen.findByText('Your maximum must be at least Rs. 20,000.')).toBeInTheDocument()
+    expect(await screen.findByText('Your new maximum must be more than Rs. 20,000.')).toBeInTheDocument()
+    expect(setAutoBid).not.toHaveBeenCalled()
+  })
+
+  it('treats "raising" to the same maximum as no raise at all', async () => {
+    vi.mocked(fetchMyAutoBid).mockResolvedValue({ max_amount: 20_000, is_active: true, max_set_at: '' })
+    renderForm()
+
+    await userEvent.type(await screen.findByLabelText('Raise maximum to (Rs.)'), '20000')
+    await userEvent.click(screen.getByRole('button', { name: 'Raise maximum' }))
+
+    expect(await screen.findByText('Your new maximum must be more than Rs. 20,000.')).toBeInTheDocument()
     expect(setAutoBid).not.toHaveBeenCalled()
   })
 

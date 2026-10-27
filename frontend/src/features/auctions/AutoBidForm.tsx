@@ -26,18 +26,22 @@ export function AutoBidForm({ auction }: { auction: Auction }) {
   const myAutoBid = useQuery({ queryKey: auctionKeys.autoBid(auction.id), queryFn: () => fetchMyAutoBid(auction.id) })
   const active = myAutoBid.data?.is_active ? myAutoBid.data : null
 
-  // A maximum can only be raised and must cover the next valid bid.
-  const floor = Math.max(auction.min_next_bid ?? auction.starting_price, active?.max_amount ?? 0)
+  // A maximum must cover the next valid bid. Raising one must go above it: the
+  // server accepts the same amount, but it would change nothing.
+  const minNext = auction.min_next_bid ?? auction.starting_price
+  const raising = active !== null && active.max_amount >= minNext
+  const floor = raising ? active.max_amount + 1 : minNext
+  const tooLow = raising ? `Your new maximum must be more than ${formatRs(active.max_amount)}.` : `Your maximum must be at least ${formatRs(floor)}.`
   const schema = useMemo(
     () =>
       z.object({
         max_amount: z
           .number({ error: 'Enter your maximum in rupees.' })
           .int('Enter a whole number of rupees.')
-          .min(floor, `Your maximum must be at least ${formatRs(floor)}.`)
+          .min(floor, tooLow)
           .max(MAX_AMOUNT, 'That amount is too large.'),
       }),
-    [floor],
+    [floor, tooLow],
   )
   const form = useForm<{ max_amount: number }>({ resolver: zodResolver(schema) })
 
@@ -96,10 +100,9 @@ export function AutoBidForm({ auction }: { auction: Auction }) {
         inputMode="numeric"
         step={1}
         min={floor}
-        placeholder={String(floor)}
         {...form.register('max_amount', { valueAsNumber: true })}
         error={form.formState.errors.max_amount?.message}
-        hint={`At least ${formatRs(floor)}`}
+        hint={raising ? `More than your current ${formatRs(active.max_amount)}` : `At least ${formatRs(floor)}`}
       />
       <Button type="submit" variant="secondary" busy={mutation.isPending} className="w-full">
         {active ? 'Raise maximum' : 'Start auto-bidding'}
