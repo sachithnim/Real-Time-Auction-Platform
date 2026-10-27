@@ -168,7 +168,8 @@ cd frontend && npm run typecheck && npm run lint && npm test -- --run
 
 GitHub Actions runs the same checks on every pull request and every push to `main` (`.github/workflows/ci.yml`):
 backend code style (Pint) and the full test suite against a MySQL 8.4 service, and frontend typecheck, lint, tests
-and production build.
+and production build. Dependabot (`.github/dependabot.yml`) checks Composer, npm, GitHub Actions and the PHP base image
+every Monday and opens grouped update PRs, which go through the same checks before they can be merged.
 
 Backend tests deliberately use MySQL: the bid engine relies on `SELECT ... FOR UPDATE` row locks, which
 SQLite does not support, so locking tests on SQLite would prove nothing. A guard test
