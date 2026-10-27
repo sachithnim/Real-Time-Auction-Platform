@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\ScanBiddingActivity;
 use Illuminate\Support\Facades\Route;
@@ -42,8 +43,14 @@ Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', ScanBiddingAc
     Route::put('auctions/{auction}/auto-bid', [AutoBidController::class, 'update']);
 });
 
+// Paying for a won auction: winner only (checked in PaymentService), safe to retry.
+Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
+    Route::post('auctions/{auction}/payment', [PaymentController::class, 'store']);
+});
+
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
     Route::get('auctions/{auction}/auto-bid', [AutoBidController::class, 'show']);
+    Route::get('auctions/{auction}/payment', [PaymentController::class, 'show']);
     Route::put('auctions/{auction}/watch', [WatchlistController::class, 'store']);
     Route::delete('auctions/{auction}/watch', [WatchlistController::class, 'destroy']);
 });

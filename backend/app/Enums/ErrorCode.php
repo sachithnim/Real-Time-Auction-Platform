@@ -28,6 +28,10 @@ enum ErrorCode: string
     case AuctionNotEditable = 'AUCTION_NOT_EDITABLE';
     case CategoryInUse = 'CATEGORY_IN_USE';
 
+    // Payments
+    case PaymentNotAvailable = 'PAYMENT_NOT_AVAILABLE';
+    case PaymentAlreadyCompleted = 'PAYMENT_ALREADY_COMPLETED';
+
     // Bidding
     case InvalidBid = 'INVALID_BID';
     case BidTooLow = 'BID_TOO_LOW';
@@ -53,6 +57,8 @@ enum ErrorCode: string
             self::InvalidTransition,
             self::AuctionNotEditable,
             self::CategoryInUse,
+            self::PaymentNotAvailable,
+            self::PaymentAlreadyCompleted,
             self::BidConflictRetry,
             self::DuplicateRequest => 409,
 

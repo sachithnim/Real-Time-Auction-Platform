@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Http\Resources\PaymentResource;
 use App\Models\Auction;
 use App\Support\ServerTime;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class AdminAuctionResource extends JsonResource
             'winner_id' => $this->winner_id,
             'created_by' => $this->created_by,
             'bids_count' => $this->whenCounted('bids'),
+            'payment' => $this->whenLoaded('payment', fn () => $this->payment === null ? null : new PaymentResource($this->payment)),
             'started_at' => ServerTime::format($this->started_at),
             'ended_at' => ServerTime::format($this->ended_at),
             'cancelled_at' => ServerTime::format($this->cancelled_at),
