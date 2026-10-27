@@ -1,10 +1,11 @@
 import { api } from '../../lib/api'
-import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, Category, CursorPage, Paginated, PlaceBidResponse, Single } from '../../types/api'
+import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, Category, CursorPage, Paginated, Payment, PlaceBidResponse, Single } from '../../types/api'
 
 export const auctionKeys = {
   all: ['auctions'] as const,
   list: (filter: AuctionListFilter, category: string | null, page: number) => ['auctions', 'list', filter, category ?? 'ALL', page] as const,
   categories: ['categories'] as const,
+  payment: (id: number) => ['auctions', 'payment', id] as const,
   detail: (id: number) => ['auctions', 'detail', id] as const,
   bids: (id: number) => ['auctions', 'bids', id] as const,
   autoBid: (id: number) => ['auctions', 'auto-bid', id] as const,
@@ -24,6 +25,27 @@ export async function fetchAuctions(filter: AuctionListFilter, page: number, cat
 
 export async function fetchCategories() {
   const { data } = await api.get<{ data: Category[] }>('/api/categories')
+  return data.data
+}
+
+export interface CardInput {
+  cardholder_name: string
+  card_number: string
+  expiry: string
+  cvc: string
+}
+
+/** The signed-in winner's payment for a sold auction. */
+export async function fetchMyPayment(auctionId: number) {
+  const { data } = await api.get<Single<Payment>>(`/api/auctions/${auctionId}/payment`)
+  return data.data
+}
+
+/** One checkout attempt. A declined card comes back as a FAILED payment, not an error. */
+export async function payForAuction(auctionId: number, card: CardInput, idempotencyKey: string) {
+  const { data } = await api.post<Single<Payment>>(`/api/auctions/${auctionId}/payment`, card, {
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
   return data.data
 }
 

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Only the admin-editable fields are fillable. Status, price, leader,
@@ -71,6 +72,12 @@ class Auction extends Model
     public function watchers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'watchlists')->withTimestamps();
+    }
+
+    /** The winner's payment, once the auction is sold. */
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class);
     }
 
     public function category(): BelongsTo

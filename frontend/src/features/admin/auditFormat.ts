@@ -30,6 +30,8 @@ const titles: Record<string, string> = {
   WINNER_SELECTED: 'Winner selected',
   RESERVE_NOT_MET: 'Reserve not met',
   AUCTION_CANCELLED: 'Auction cancelled',
+  PAYMENT_SUCCEEDED: 'Payment received',
+  PAYMENT_FAILED: 'Payment declined',
 }
 
 /** "AUCTION_UPDATED" → "Auction edited"; unknown types → "Something happened". */
@@ -40,6 +42,7 @@ export function eventTitle(type: string): string {
 const fieldLabels: Record<string, string> = {
   title: 'Title',
   description: 'Description',
+  category_id: 'Category',
   starting_price: 'Starting price',
   reserve_price: 'Reserve price',
   min_increment: 'Minimum increment',
@@ -57,6 +60,16 @@ const reasons: Record<string, string> = {
   AUCTION_NOT_STARTED: 'the auction had not started',
   AUCTION_ENDED: 'the auction had ended',
   AUCTION_NOT_LIVE: 'the auction was not open',
+}
+
+const paymentReasons: Record<string, string> = {
+  CARD_DECLINED: 'the card was declined',
+  INSUFFICIENT_FUNDS: 'insufficient funds',
+}
+
+/** "VISA •••• 4242" from a payment event's card fields. */
+function cardLabel(p: Record<string, unknown>): string {
+  return `${String(p.card_brand ?? 'card')} •••• ${String(p.card_last4 ?? '????')}`
 }
 
 const statusWords: Record<string, string> = {
@@ -208,6 +221,17 @@ export function describeEvent(event: AuctionEvent, users: AuditUsers = {}): Audi
       const reason = typeof p.reason === 'string' && p.reason.trim() !== '' ? ` Reason: "${p.reason}".` : ' No reason given.'
       const while_ = statusWords[String(p.from_status)] ?? String(p.from_status ?? '').toLowerCase()
       return view(`Cancelled while it was ${while_}.${reason}`, 'danger')
+    }
+
+    case 'PAYMENT_SUCCEEDED':
+      return view(`${event.actor?.name ?? 'The winner'} paid ${rs('amount')} by ${cardLabel(p)}.`, 'success', [
+        { label: 'Receipt', value: String(p.reference ?? '—') },
+        { label: 'Attempt', value: String(p.attempt ?? 1) },
+      ])
+
+    case 'PAYMENT_FAILED': {
+      const reason = paymentReasons[String(p.reason)] ?? sentenceCase(String(p.reason ?? 'declined')).toLowerCase()
+      return view(`${event.actor?.name ?? 'The winner'}'s payment of ${rs('amount')} by ${cardLabel(p)} was declined: ${reason}.`, 'danger')
     }
 
     default:

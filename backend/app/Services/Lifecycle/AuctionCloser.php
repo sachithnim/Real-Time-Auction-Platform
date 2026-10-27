@@ -7,6 +7,7 @@ use App\Enums\AuctionResult;
 use App\Enums\AuctionStatus;
 use App\Models\Auction;
 use App\Services\AuctionEventRecorder;
+use App\Services\Payments\PaymentService;
 use App\Services\Realtime\AuctionBroadcaster;
 use App\Support\ServerTime;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class AuctionCloser
     public function __construct(
         private readonly AuctionEventRecorder $events,
         private readonly AuctionBroadcaster $broadcaster,
+        private readonly PaymentService $payments,
     ) {}
 
     public function close(int $auctionId): CloseOutcome
@@ -85,6 +87,9 @@ class AuctionCloser
                 'final_price' => $highestBid,
                 'reserve_price' => $auction->reserve_price,
             ]);
+
+            // The winner now owes the final price: open their payment in the same transaction.
+            $this->payments->openFor($auction);
         }
 
         if ($result === AuctionResult::ReserveNotMet) {

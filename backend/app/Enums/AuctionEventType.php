@@ -22,4 +22,6 @@ enum AuctionEventType: string
     case WinnerSelected = 'WINNER_SELECTED';
     case ReserveNotMet = 'RESERVE_NOT_MET';
     case AuctionCancelled = 'AUCTION_CANCELLED';
+    case PaymentSucceeded = 'PAYMENT_SUCCEEDED';
+    case PaymentFailed = 'PAYMENT_FAILED';
 }

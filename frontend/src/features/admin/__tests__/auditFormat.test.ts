@@ -80,4 +80,22 @@ describe('audit log wording', () => {
     expect(fieldValue('max_extensions', 3)).toBe('3')
     expect(fieldValue('extension_seconds', 0)).toBe('off')
   })
+
+  it('describes payments with the card and the decline reason', () => {
+    const winner = { id: 2, name: 'Bidder 1', email: 'bidder1@auction.test', role: 'BIDDER' as const }
+    const paid = describeEvent({
+      ...event('PAYMENT_SUCCEEDED', { amount: 15500, card_brand: 'VISA', card_last4: '4242', reference: 'PAY-ABC1234567', attempt: 2 }),
+      actor: winner,
+    })
+    const declined = describeEvent({
+      ...event('PAYMENT_FAILED', { amount: 15500, card_brand: 'VISA', card_last4: '0002', reason: 'CARD_DECLINED' }),
+      actor: winner,
+    })
+
+    expect(paid.title).toBe('Payment received')
+    expect(paid.summary).toBe('Bidder 1 paid Rs. 15,500 by VISA •••• 4242.')
+    expect(paid.details).toEqual([{ label: 'Receipt', value: 'PAY-ABC1234567' }, { label: 'Attempt', value: '2' }])
+    expect(declined.title).toBe('Payment declined')
+    expect(declined.summary).toBe("Bidder 1's payment of Rs. 15,500 by VISA •••• 0002 was declined: the card was declined.")
+  })
 })

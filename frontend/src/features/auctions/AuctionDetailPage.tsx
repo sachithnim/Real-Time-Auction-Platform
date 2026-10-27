@@ -14,6 +14,7 @@ import { auctionKeys, fetchAuction } from './api'
 import { AuctionResultPanel } from './AuctionResultPanel'
 import { BiddingPanel } from './BiddingPanel'
 import { BidHistory } from './BidHistory'
+import { CheckoutPanel } from './CheckoutPanel'
 import { WatchButton } from './WatchButton'
 
 /** The live auction screen. */
@@ -61,6 +62,7 @@ export function AuctionDetailPage() {
       </div>
 
       <AuctionResultPanel auction={a} />
+      {a.is_winner && a.status === 'COMPLETED' && a.result === 'SOLD' && <CheckoutPanel auction={a} />}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

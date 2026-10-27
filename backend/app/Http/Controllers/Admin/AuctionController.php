@@ -76,7 +76,7 @@ class AuctionController extends Controller
 
     private function respond(Auction $auction, int $status = 200): JsonResponse
     {
-        $auction->loadCount('bids');
+        $auction->load(['category', 'payment'])->loadCount('bids');
 
         return (new AdminAuctionResource($auction))
             ->additional(ServerTime::meta())
