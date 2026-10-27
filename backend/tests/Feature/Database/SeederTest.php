@@ -39,6 +39,23 @@ class SeederTest extends TestCase
         $this->assertSame(5, User::where('role', UserRole::Bidder)->count());
     }
 
+    public function test_demo_bidders_have_real_looking_names_not_pseudonyms(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $names = User::where('role', UserRole::Bidder)->orderBy('email')->pluck('name', 'email')->all();
+
+        $this->assertSame([
+            'bidder1@auction.test' => 'Asha Perera',
+            'bidder2@auction.test' => 'Nimal Silva',
+            'bidder3@auction.test' => 'Kavindi Fernando',
+            'bidder4@auction.test' => 'Ruwan Jayasinghe',
+            'bidder5@auction.test' => 'Dilini Wickramasinghe',
+        ], $names);
+        // A name like "Bidder 2" would be confused with the pseudonyms bidders see.
+        $this->assertSame(0, User::where('name', 'like', 'Bidder %')->count());
+    }
+
     public function test_seeds_the_assignment_increment_tiers(): void
     {
         $this->seed(DatabaseSeeder::class);
