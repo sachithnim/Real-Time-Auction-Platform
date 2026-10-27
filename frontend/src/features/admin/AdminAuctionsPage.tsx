@@ -2,7 +2,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { stackedTable } from '../../components/stackedTable'
-import { Alert, Button, Card, PageLoader, StatusBadge } from '../../components/ui'
+import { TableSkeleton } from '../../components/Skeleton'
+import { Alert, Button, Card, StatusBadge } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRs } from '../../lib/money'
@@ -47,7 +48,7 @@ export function AdminAuctionsPage() {
         </div>
       </div>
 
-      {auctions.isPending && <PageLoader />}
+      {auctions.isPending && <TableSkeleton label="Loading auctions" />}
       {auctions.isError && <Alert>{friendlyMessage(parseApiError(auctions.error))}</Alert>}
 
       {auctions.data && (

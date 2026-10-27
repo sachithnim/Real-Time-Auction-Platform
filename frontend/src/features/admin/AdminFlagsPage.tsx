@@ -1,7 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { Alert, Button, Card, PageLoader } from '../../components/ui'
+import { TableSkeleton } from '../../components/Skeleton'
+import { Alert, Button, Card } from '../../components/ui'
 import { useToast } from '../../components/useToast'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -52,7 +53,7 @@ export function AdminFlagsPage() {
         </div>
       </div>
 
-      {flags.isPending && <PageLoader />}
+      {flags.isPending && <TableSkeleton rows={3} label="Loading flags" />}
       {flags.isError && <Alert>{friendlyMessage(parseApiError(flags.error))}</Alert>}
 
       {flags.data && (

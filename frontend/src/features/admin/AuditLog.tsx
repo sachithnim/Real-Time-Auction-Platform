@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { PageLoader } from '../../components/ui'
+import { RowsSkeleton } from '../../components/Skeleton'
 import { adminKeys, fetchAuctionEvents } from './api'
 import { describeEvent, eventTitle, type AuditTone } from './auditFormat'
 
@@ -33,7 +33,7 @@ export function AuditLog({ auctionId }: { auctionId: number }) {
           ))}
         </select>
       </label>
-      {events.isPending && <PageLoader />}
+      {events.isPending && <RowsSkeleton rows={6} label="Loading the audit log" />}
       {events.data && events.data.data.length === 0 && <p className="text-sm text-slate-500">No events.</p>}
       {events.data && (
         <ol className="space-y-2" aria-label="Audit log">
