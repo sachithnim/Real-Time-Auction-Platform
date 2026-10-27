@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
+import { ThemeToggle } from './ThemeToggle'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-900'}`
@@ -64,21 +65,24 @@ export function Layout() {
               ))}
             </nav>
           </div>
-          <div className="hidden items-center gap-3 text-sm lg:flex">
-            <Account user={user} onLogout={onLogout} />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <div className="hidden items-center gap-3 text-sm lg:flex">
+              <Account user={user} onLogout={onLogout} />
+            </div>
+            <button
+              type="button"
+              className="rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+                {menuOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+              </svg>
+            </button>
           </div>
-          <button
-            type="button"
-            className="rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-              {menuOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-            </svg>
-          </button>
         </div>
 
         {menuOpen && (
