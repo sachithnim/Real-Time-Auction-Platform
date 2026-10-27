@@ -1,0 +1,56 @@
+name: Bug report
+description: Something doesn't work as expected.
+title: "Bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting. Please leave out passwords, tokens and other private data.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Bidding (bids, automatic bids, increments)
+        - Auction lifecycle (start, close, anti-sniping, reserve)
+        - Real-time updates
+        - Admin pages
+        - Watchlists, notifications or payments
+        - Docker / local setup
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, including any error code (e.g. `BID_TOO_LOW`) or message.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Log in as bidder1@auction.test
+        2. Open "Hand-Carved Kandyan Mask"
+        3. Bid 15,000
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: How you run it, and your browser.
+      placeholder: "Docker on Windows, Chrome 141"
