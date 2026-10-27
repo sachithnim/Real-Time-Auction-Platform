@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an improvement or a new feature.
+title: "Feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: Who is it for (bidders, admins, developers), and what is hard today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should happen? Include rules and edge cases if you know them.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Fits the platform's rules
+      options:
+        - label: Keeps reserve prices, automatic-bid maximums and other bidders' identities private
+        - label: Does not change or delete accepted bids (bid history is permanent)
