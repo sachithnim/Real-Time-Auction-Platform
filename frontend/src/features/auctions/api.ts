@@ -1,9 +1,10 @@
 import { api } from '../../lib/api'
-import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, CursorPage, Paginated, PlaceBidResponse, Single } from '../../types/api'
+import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, Category, CursorPage, Paginated, PlaceBidResponse, Single } from '../../types/api'
 
 export const auctionKeys = {
   all: ['auctions'] as const,
-  list: (filter: AuctionListFilter, page: number) => ['auctions', 'list', filter, page] as const,
+  list: (filter: AuctionListFilter, category: string | null, page: number) => ['auctions', 'list', filter, category ?? 'ALL', page] as const,
+  categories: ['categories'] as const,
   detail: (id: number) => ['auctions', 'detail', id] as const,
   bids: (id: number) => ['auctions', 'bids', id] as const,
   autoBid: (id: number) => ['auctions', 'auto-bid', id] as const,
@@ -12,12 +13,18 @@ export const auctionKeys = {
 /** A status tab, every auction, or the signed-in bidder's watchlist. */
 export type AuctionListFilter = AuctionStatus | 'ALL' | 'WATCHING'
 
-export async function fetchAuctions(filter: AuctionListFilter, page: number) {
+/** category is a category slug, or null for every category. */
+export async function fetchAuctions(filter: AuctionListFilter, page: number, category: string | null = null) {
   const status = filter === 'ALL' || filter === 'WATCHING' ? undefined : filter
   const { data } = await api.get<Paginated<Auction>>('/api/auctions', {
-    params: { status, watching: filter === 'WATCHING' ? 1 : undefined, page, per_page: 12 },
+    params: { status, watching: filter === 'WATCHING' ? 1 : undefined, category: category ?? undefined, page, per_page: 12 },
   })
   return data
+}
+
+export async function fetchCategories() {
+  const { data } = await api.get<{ data: Category[] }>('/api/categories')
+  return data.data
 }
 
 export async function watchAuction(id: number) {

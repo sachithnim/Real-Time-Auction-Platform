@@ -53,7 +53,10 @@ export function AuctionDetailPage() {
             <StatusBadge status={a.status} />
             <WatchButton auction={a} />
           </div>
-          <RealtimeBadge status={realtime} />
+          <div className="flex flex-wrap items-center gap-3">
+            {a.category && <span className="text-xs font-medium uppercase tracking-wide text-indigo-700">{a.category.name}</span>}
+            <RealtimeBadge status={realtime} />
+          </div>
         </div>
       </div>
 

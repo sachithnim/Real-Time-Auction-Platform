@@ -32,10 +32,21 @@ export interface CursorPage<T> {
 }
 
 /** Bidder view: never contains the reserve price or anyone's identity. */
+/** An auction category. auctions_count is present on category lists. */
+export interface Category {
+  id: number
+  name: string
+  slug: string
+  auctions_count?: number
+}
+
+export type CategorySummary = Pick<Category, 'id' | 'name' | 'slug'>
+
 export interface Auction {
   id: number
   title: string
   description: string
+  category: CategorySummary | null
   status: AuctionStatus
   result: AuctionResult | null
   starting_price: number
@@ -71,6 +82,8 @@ export interface AdminAuction {
   id: number
   title: string
   description: string
+  category_id: number | null
+  category: CategorySummary | null
   status: AuctionStatus
   result: AuctionResult | null
   starting_price: number

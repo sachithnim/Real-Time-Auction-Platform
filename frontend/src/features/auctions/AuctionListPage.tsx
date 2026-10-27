@@ -11,7 +11,7 @@ import type { Auction, AuctionStatus, Paginated } from '../../types/api'
 import { useAuth } from '../auth/useAuth'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useRealtimeStatus } from '../realtime/useRealtimeStatus'
-import { auctionKeys, fetchAuctions, type AuctionListFilter } from './api'
+import { auctionKeys, fetchAuctions, fetchCategories, type AuctionListFilter } from './api'
 import { WatchButton } from './WatchButton'
 
 const tabs: { value: AuctionListFilter; label: string }[] = [
@@ -40,13 +40,15 @@ export function AuctionListPage() {
   const [selected, setStatus] = useState<AuctionListFilter>('ALL')
   // The watchlist belongs to a signed-in bidder; after logging out, fall back to all auctions.
   const status = selected === 'WATCHING' && !isBidder ? 'ALL' : selected
+  const [category, setCategory] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
   const realtime = useRealtimeStatus(() => queryClient.invalidateQueries({ queryKey: auctionKeys.all }))
+  const categories = useQuery({ queryKey: auctionKeys.categories, queryFn: fetchCategories, staleTime: 5 * 60_000 })
 
   const auctions = useQuery({
-    queryKey: auctionKeys.list(status, page),
-    queryFn: () => fetchAuctions(status, page),
+    queryKey: auctionKeys.list(status, category, page),
+    queryFn: () => fetchAuctions(status, page, category),
     placeholderData: keepPreviousData,
   })
 
@@ -87,6 +89,26 @@ export function AuctionListPage() {
           <h1 className="text-2xl font-bold">Auctions</h1>
           <RealtimeBadge status={realtime} />
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        <label className="text-sm text-slate-600">
+          <span className="sr-only">Category</span>
+          <select
+            aria-label="Category"
+            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
+            value={category ?? ''}
+            onChange={(e) => {
+              setCategory(e.target.value || null)
+              setPage(1)
+            }}
+          >
+            <option value="">All categories</option>
+            {categories.data?.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name} ({c.auctions_count ?? 0})
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist">
           {visibleTabs.map((tab) => (
             <button
@@ -104,6 +126,7 @@ export function AuctionListPage() {
             </button>
           ))}
         </div>
+        </div>
       </div>
 
       {auctions.isPending && <PageLoader />}
@@ -120,7 +143,11 @@ export function AuctionListPage() {
         <>
           {auctions.data.data.length === 0 ? (
             <p className="py-12 text-center text-slate-500">
-              {status === 'WATCHING' ? 'You are not watching any auctions yet. Use ☆ Watch on an auction to follow it.' : 'No auctions here yet.'}
+              {status === 'WATCHING' && !category
+                ? 'You are not watching any auctions yet. Use ☆ Watch on an auction to follow it.'
+                : category
+                  ? 'No auctions in this category here yet.'
+                  : 'No auctions here yet.'}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -160,6 +187,7 @@ function AuctionCard({ auction }: { auction: Auction }) {
             <WatchButton auction={auction} />
           </div>
         </div>
+        {auction.category && <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">{auction.category.name}</p>}
         <p className="line-clamp-2 text-sm text-slate-600">{auction.description}</p>
         <div className="flex items-end justify-between">
           <div>
