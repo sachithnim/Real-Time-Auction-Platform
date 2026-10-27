@@ -1,4 +1,6 @@
 import { Link } from 'react-router'
+import { Alert } from '../../components/ui'
+import { formatRs } from '../../lib/money'
 import type { Auction } from '../../types/api'
 import { useAuth } from '../auth/useAuth'
 import { AutoBidForm } from './AutoBidForm'
@@ -24,12 +26,23 @@ export function BiddingPanel({ auction }: { auction: Auction }) {
     return <p className="text-sm text-slate-500">Admins cannot bid.</p>
   }
 
+  // The bidder gets a pseudonym with their first bid, so having one and not leading means outbid.
+  const outbid = !auction.is_leading && auction.my_pseudonym !== null && auction.current_price !== null
+
   return (
     <div className="space-y-5 border-t border-slate-100 pt-4">
       {auction.is_leading ? (
         <p className="text-sm text-emerald-700">You are the highest bidder. Raise your maximum below to stay ahead automatically.</p>
       ) : (
-        <BidForm auction={auction} />
+        <>
+          {outbid && (
+            <Alert tone="warning">
+              <strong>You have been outbid.</strong> The price is now {formatRs(auction.current_price)}. Bid{' '}
+              {formatRs(auction.min_next_bid ?? auction.current_price)} or more to lead again.
+            </Alert>
+          )}
+          <BidForm auction={auction} />
+        </>
       )}
       <div className="border-t border-slate-100 pt-4">
         <AutoBidForm auction={auction} />
