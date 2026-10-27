@@ -83,8 +83,13 @@ export function friendlyMessage(info: ApiErrorInfo): string {
       return 'Your account cannot do this.'
     case 'CSRF_TOKEN_MISMATCH':
       return 'Your session expired. Please try again.'
+    case 'PAYMENT_ALREADY_COMPLETED':
+      return 'This auction has already been paid for.'
+    case 'PAYMENT_NOT_AVAILABLE':
+      return 'There is nothing to pay: this auction was not sold.'
     case 'INVALID_TRANSITION':
     case 'AUCTION_NOT_EDITABLE':
+    case 'CATEGORY_IN_USE':
       return info.message
     case 'VALIDATION_FAILED':
       return Object.values(fieldErrors(info))[0] ?? info.message

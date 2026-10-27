@@ -84,6 +84,8 @@ export interface AdminAuction {
   description: string
   category_id: number | null
   category: CategorySummary | null
+  /** Present on the single-auction admin view once the auction is sold. */
+  payment?: Payment | null
   status: AuctionStatus
   result: AuctionResult | null
   starting_price: number
@@ -204,6 +206,22 @@ export interface MonitorRejection {
 export interface MonitorSnapshot {
   auctions: MonitorAuction[]
   recent_rejections: MonitorRejection[]
+}
+
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED'
+
+/** The winner's (simulated) payment for a sold auction. */
+export interface Payment {
+  id: number
+  auction_id: number
+  amount: number
+  status: PaymentStatus
+  card_brand: string | null
+  card_last4: string | null
+  reference: string | null
+  failure_reason: string | null
+  attempts: number
+  paid_at: string | null
 }
 
 export type FlagRule = 'RAPID_BIDDING' | 'MANY_REJECTIONS' | 'SHARED_IP' | 'ALTERNATING_LEADERS'
