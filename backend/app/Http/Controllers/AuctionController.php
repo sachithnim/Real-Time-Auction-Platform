@@ -26,6 +26,7 @@ class AuctionController extends Controller
         }
 
         $auctions = Auction::query()
+            ->with('category')
             ->withCount('bids')
             // The viewer's own watch status, in the same query (no per-row lookups).
             ->when($viewer, fn ($query) => $query->withExists([
@@ -33,6 +34,7 @@ class AuctionController extends Controller
             ]))
             ->where('status', '!=', AuctionStatus::Draft)
             ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when($request->validated('category'), fn ($query, $slug) => $query->whereRelation('category', 'slug', $slug))
             ->when($request->boolean('watching'), fn ($query) => $query->whereHas(
                 'watchers', fn ($watchers) => $watchers->whereKey($viewer->id),
             ))
@@ -54,7 +56,7 @@ class AuctionController extends Controller
             throw new ApiException(ErrorCode::AuctionNotFound, 'Auction not found.');
         }
 
-        $auction->loadCount('bids');
+        $auction->load('category')->loadCount('bids');
 
         return (new AuctionResource($auction))->additional(ServerTime::meta());
     }

@@ -30,6 +30,9 @@ export function Layout() {
                   <NavLink to="/admin/monitor" className={navClass}>
                     Live monitor
                   </NavLink>
+                  <NavLink to="/admin/categories" className={navClass}>
+                    Categories
+                  </NavLink>
                   <NavLink to="/admin/flags" className={navClass}>
                     Flags
                   </NavLink>

@@ -28,6 +28,7 @@ class AuctionController extends Controller
         Gate::authorize('manage', Auction::class);
 
         $auctions = Auction::query()
+            ->with('category')
             ->withCount('bids')
             ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
             ->orderByDesc('id')

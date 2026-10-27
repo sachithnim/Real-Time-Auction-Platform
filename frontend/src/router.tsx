@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { AdminAuctionDetailPage } from './features/admin/AdminAuctionDetailPage'
 import { AdminAuctionFormPage } from './features/admin/AdminAuctionFormPage'
 import { AdminAuctionsPage } from './features/admin/AdminAuctionsPage'
+import { AdminCategoriesPage } from './features/admin/AdminCategoriesPage'
 import { AdminFlagsPage } from './features/admin/AdminFlagsPage'
 import { AdminMonitorPage } from './features/admin/AdminMonitorPage'
 import { AdminStatisticsPage } from './features/admin/AdminStatisticsPage'
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: '/admin/statistics', element: <RequireAuth role="ADMIN"><AdminStatisticsPage /></RequireAuth> },
       { path: '/admin/monitor', element: <RequireAuth role="ADMIN"><AdminMonitorPage /></RequireAuth> },
       { path: '/admin/flags', element: <RequireAuth role="ADMIN"><AdminFlagsPage /></RequireAuth> },
+      { path: '/admin/categories', element: <RequireAuth role="ADMIN"><AdminCategoriesPage /></RequireAuth> },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '*', element: <NotFoundPage /> },

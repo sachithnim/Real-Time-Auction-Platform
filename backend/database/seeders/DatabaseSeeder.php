@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BidIncrementRuleSeeder::class,
             UserSeeder::class,
+            CategorySeeder::class,
             DemoAuctionSeeder::class,
         ]);
     }

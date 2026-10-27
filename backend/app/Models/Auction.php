@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * winner and extension counters are changed by services under a row lock.
  */
 #[Fillable([
-    'title', 'description', 'starting_price', 'reserve_price', 'min_increment',
+    'title', 'description', 'category_id', 'starting_price', 'reserve_price', 'min_increment',
     'start_at', 'end_at', 'anti_snipe_seconds', 'extension_seconds', 'max_extensions',
 ])]
 // The reserve is private; it must never leak through a default serialization.
@@ -48,6 +48,7 @@ class Auction extends Model
             'extensions_count' => 'integer',
             'event_sequence' => 'integer',
             'created_by' => 'integer',
+            'category_id' => 'integer',
             'leader_id' => 'integer',
             'winner_id' => 'integer',
             'start_at' => 'immutable_datetime',
@@ -70,6 +71,11 @@ class Auction extends Model
     public function watchers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'watchlists')->withTimestamps();
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function creator(): BelongsTo

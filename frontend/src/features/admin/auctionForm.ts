@@ -20,6 +20,7 @@ export const auctionFormSchema = z
   .object({
     title: z.string().trim().min(1, 'Enter a title.').max(150),
     description: z.string().trim().min(1, 'Enter a description.').max(5000),
+    category_id: z.number().int().nullable().optional(),
     starting_price: money('starting price'),
     reserve_price: z.number().int('Use whole rupees.').min(1).nullable(),
     min_increment: money('minimum increment'),
