@@ -49,7 +49,7 @@ export function applyAuctionEvent(auction: Auction, name: AuctionEventName, payl
   switch (name) {
     case 'BidPlaced': {
       const bid = p.bid as { id: number; amount: number; type: BidType; bidder: string; created_at: string }
-      Object.assign(next, priceFields(p))
+      Object.assign(next, priceFields(p, auction))
       const name = displayName(bid.bidder, auction) ?? bid.bidder
       return {
         kind: 'applied',
@@ -58,7 +58,7 @@ export function applyAuctionEvent(auction: Auction, name: AuctionEventName, payl
       }
     }
     case 'PriceChanged':
-      Object.assign(next, priceFields(p))
+      Object.assign(next, priceFields(p, auction))
       break
     case 'LeaderChanged': {
       const leader = displayName(p.leader as string | null, auction)
@@ -98,11 +98,18 @@ export function applyAuctionEvent(auction: Auction, name: AuctionEventName, payl
   return { kind: 'applied', auction: next }
 }
 
-function priceFields(p: Record<string, unknown>): Partial<Auction> {
-  return {
+function priceFields(p: Record<string, unknown>, auction: Auction): Partial<Auction> {
+  const fields: Partial<Auction> = {
     current_price: p.current_price as number,
     min_next_bid: p.min_next_bid as number,
     reserve_met: p.reserve_met as boolean,
     bids_count: p.bids_count as number,
   }
+  // The leader comes with the price, so the badge never lags behind it. Older
+  // events without it leave the leader to LeaderChanged, as before.
+  if ('leader' in p) {
+    const leader = displayName(p.leader as string | null, auction)
+    Object.assign(fields, { leader, is_leading: leader === 'You' })
+  }
+  return fields
 }

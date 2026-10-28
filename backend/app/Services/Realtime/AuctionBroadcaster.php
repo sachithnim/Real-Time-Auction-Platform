@@ -55,7 +55,12 @@ class AuctionBroadcaster
         array $outbidUserIds,
         iterable $exhaustedAutoBids,
     ): void {
-        $state = $this->priceState($auction);
+        // The leader (pseudonym only) rides along with the price, so a client
+        // updates both in one step instead of waiting for LeaderChanged.
+        $state = [
+            ...$this->priceState($auction),
+            'leader' => $this->names->nameFor($auction, $auction->leader_id, null),
+        ];
 
         foreach ($bids as $bid) {
             $this->publish($auction, BidPlaced::class, [
