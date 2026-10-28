@@ -124,3 +124,13 @@
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
+
+/*
+ * A clear focus ring for keyboard users on every control. :where() keeps it at
+ * zero specificity, so components with their own focus style (inputs) still win.
+ * :focus-visible means mouse clicks do not show it.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-indigo-600);
+  outline-offset: 2px;
+}

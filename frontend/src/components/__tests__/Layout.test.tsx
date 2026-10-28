@@ -46,6 +46,18 @@ function renderLayout(user: User | null) {
 const menuButton = () => screen.getByRole('button', { name: /menu/i })
 const phoneMenu = () => document.getElementById('mobile-menu')
 
+describe('<Layout> skip link', () => {
+  it('is the first thing a keyboard user reaches and jumps to the page content', async () => {
+    renderLayout(bidder)
+
+    await userEvent.tab()
+    const skip = screen.getByRole('link', { name: 'Skip to content' })
+    expect(skip).toHaveFocus()
+    expect(skip).toHaveAttribute('href', '#main')
+    expect(document.getElementById('main')).toHaveAttribute('tabindex', '-1')
+  })
+})
+
 describe('<Layout> phone menu', () => {
   it('starts closed and opens with every admin link', async () => {
     renderLayout(admin)
