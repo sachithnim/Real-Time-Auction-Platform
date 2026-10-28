@@ -118,6 +118,35 @@ class RealtimeEventsTest extends TestCase
         }
     }
 
+    public function test_bid_and_price_events_carry_the_final_leader_by_pseudonym(): void
+    {
+        $auction = $this->liveAuction();
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $this->bids->configureAutoBid($auction, $a, 20_000);
+        $this->travel(1)->seconds();
+        Event::fake([...self::PUBLIC_EVENTS, ...self::PRIVATE_EVENTS]);
+
+        // B's challenge is answered by A's proxy in the same lock: two visible bids, one final leader.
+        $this->bids->placeBid($auction, $b, 12_000);
+
+        $events = $this->auctionEvents();
+        $placed = array_values(array_filter($events, fn ($e) => $e instanceof BidPlaced));
+        // [bidder, leader] per visible bid: B's challenge, then A's automatic answer.
+        $this->assertSame([['Bidder 2', 'Bidder 1'], ['Bidder 1', 'Bidder 1']], array_map(
+            fn ($e) => [$e->broadcastWith()['bid']['bidder'], $e->broadcastWith()['leader']],
+            $placed,
+        ));
+        $price = array_values(array_filter($events, fn ($e) => $e instanceof PriceChanged))[0];
+        $this->assertSame('Bidder 1', $price->broadcastWith()['leader']);
+
+        // Still a pseudonym: no id, email or maximum reaches the public channel.
+        foreach ($events as $event) {
+            $this->assertNoPrivateData($event->broadcastWith());
+            $this->assertStringNotContainsString('20000', json_encode($event->broadcastWith()));
+        }
+    }
+
     public function test_the_previous_leader_is_told_privately_they_were_outbid(): void
     {
         $auction = $this->liveAuction();
