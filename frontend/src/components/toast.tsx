@@ -35,7 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div key={toast.id} role="status" className={`pointer-events-auto rounded-md border-l-4 bg-white p-3 shadow-lg ${tones[toast.tone]}`}>
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold text-slate-900">{toast.title}</p>
-              <button type="button" onClick={() => dismiss(toast.id)} className="text-slate-400 hover:text-slate-600" aria-label="Dismiss">
+              <button type="button" onClick={() => dismiss(toast.id)} className="text-slate-500 hover:text-slate-700" aria-label="Dismiss">
                 ×
               </button>
             </div>

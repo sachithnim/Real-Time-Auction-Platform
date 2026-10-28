@@ -50,6 +50,12 @@ export function Layout() {
 
   return (
     <div className="min-h-screen">
+      <a
+        href="#main"
+        className="sr-only rounded-md bg-indigo-600 text-sm font-semibold text-white shadow-lg focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2"
+      >
+        Skip to content
+      </a>
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
@@ -100,7 +106,8 @@ export function Layout() {
           </div>
         )}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      {/* tabIndex lets the skip link move focus here, not only scroll. */}
+      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-6 focus:outline-none">
         <Outlet />
       </main>
     </div>
@@ -122,7 +129,7 @@ function Account({ user, onLogout, onNavigate }: { user: User | null; onLogout: 
   return (
     <>
       <span className="text-slate-600">
-        {user.name} <span className="text-xs text-slate-400">({user.role.toLowerCase()})</span>
+        {user.name} <span className="text-xs text-slate-500">({user.role.toLowerCase()})</span>
       </span>
       <button type="button" className="font-medium text-slate-600 hover:text-slate-900" onClick={onLogout}>
         Log out

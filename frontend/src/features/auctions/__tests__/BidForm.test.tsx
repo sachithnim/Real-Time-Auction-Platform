@@ -152,6 +152,20 @@ describe('<BidForm>', () => {
     expect(placeBid).toHaveBeenCalledTimes(1)
   })
 
+  it('reads the minimum to screen readers with the input, and the error once there is one', async () => {
+    renderForm()
+    const input = screen.getByLabelText('Your bid (Rs.)')
+    expect(input).toHaveAccessibleDescription('Minimum Rs. 25,500')
+
+    await userEvent.clear(input)
+    await userEvent.type(input, '100')
+    await userEvent.click(screen.getByRole('button', { name: 'Place bid' }))
+
+    expect(await screen.findByText('Your bid must be at least Rs. 25,500.')).toBeInTheDocument()
+    expect(input).toHaveAccessibleDescription('Your bid must be at least Rs. 25,500.')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+  })
+
   it('offers quick amounts from the minimum, one step apart', () => {
     renderForm()
 

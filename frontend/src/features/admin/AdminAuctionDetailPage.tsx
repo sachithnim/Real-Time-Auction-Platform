@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { DashboardSkeleton, RowsSkeleton } from '../../components/Skeleton'
 import { Alert, Button, Card, StatusBadge } from '../../components/ui'
+import { onTabListKeyDown } from '../../components/tabs'
 import { useToast } from '../../components/useToast'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -106,6 +107,7 @@ export function AdminAuctionDetailPage() {
         <Card className="space-y-3 ring-red-200">
           <p className="text-sm font-medium">Cancel this auction? Bidders will see it as cancelled. This cannot be undone.</p>
           <input
+            aria-label="Reason for cancelling"
             className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             placeholder="Reason (optional, kept in the audit log)"
             value={cancelReason}
@@ -137,13 +139,16 @@ export function AdminAuctionDetailPage() {
       </div>
 
       <Card>
-        <div className="mb-4 flex gap-2 border-b border-slate-100" role="tablist">
+        <div className="mb-4 flex gap-2 border-b border-slate-100" role="tablist" aria-label="Auction records" onKeyDown={onTabListKeyDown}>
           {(['audit', 'bids'] as const).map((t) => (
             <button
               key={t}
               type="button"
               role="tab"
+              id={`tab-${t}`}
               aria-selected={tab === t}
+              aria-controls={`panel-${t}`}
+              tabIndex={tab === t ? 0 : -1}
               onClick={() => setTab(t)}
               className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${tab === t ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500'}`}
             >
@@ -151,7 +156,9 @@ export function AdminAuctionDetailPage() {
             </button>
           ))}
         </div>
-        {tab === 'audit' ? <AuditLog auctionId={id} /> : <AdminBids auctionId={id} />}
+        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+          {tab === 'audit' ? <AuditLog auctionId={id} /> : <AdminBids auctionId={id} />}
+        </div>
       </Card>
     </div>
   )
@@ -189,7 +196,7 @@ function AdminBids({ auctionId }: { auctionId: number }) {
       <tbody className="divide-y divide-slate-100">
         {bids.data.data.map((bid) => (
           <tr key={bid.id}>
-            <td className="py-2">{bid.bidder.name} <span className="text-slate-400">({bid.bidder.email} · {bid.bidder.pseudonym})</span></td>
+            <td className="py-2">{bid.bidder.name} <span className="text-slate-500">({bid.bidder.email} · {bid.bidder.pseudonym})</span></td>
             <td className="py-2">{bid.type}</td>
             <td className="py-2 text-right tabular-nums">{formatRs(bid.amount)}</td>
             <td className="py-2 text-right text-slate-500">{new Date(bid.created_at).toLocaleTimeString()}</td>

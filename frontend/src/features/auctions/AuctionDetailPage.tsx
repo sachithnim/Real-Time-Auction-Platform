@@ -134,14 +134,20 @@ function LivePrice({ amount }: { amount: number }) {
   const changes = useChangeCount(amount)
 
   return (
-    // A new key restarts the highlight animation on every change.
-    <div
-      key={changes}
-      className={`-mx-1 rounded px-1 text-3xl font-bold tabular-nums ${changes > 0 ? 'motion-safe:animate-price-flash' : ''}`}
-      data-testid="current-price"
-    >
-      {formatRs(amount)}
-    </div>
+    <>
+      {/* A new key restarts the highlight animation on every change. */}
+      <div
+        key={changes}
+        className={`-mx-1 rounded px-1 text-3xl font-bold tabular-nums ${changes > 0 ? 'motion-safe:animate-price-flash' : ''}`}
+        data-testid="current-price"
+      >
+        {formatRs(amount)}
+      </div>
+      {/* Screen readers hear live price changes (not the first load), politely, without moving focus. */}
+      <p className="sr-only" aria-live="polite">
+        {changes > 0 ? `Price is now ${formatRs(amount)}` : ''}
+      </p>
+    </>
   )
 }
 

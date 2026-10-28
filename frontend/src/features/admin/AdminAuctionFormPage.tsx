@@ -88,8 +88,15 @@ function AuctionForm({ auction }: { auction: AdminAuction | null }) {
           <Field label="Title" {...form.register('title')} error={errors.title?.message} />
           <div className="space-y-1">
             <label htmlFor="description" className="block text-sm font-medium text-slate-700">Description</label>
-            <textarea id="description" rows={4} className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm" {...form.register('description')} />
-            {errors.description && <p role="alert" className="text-xs text-red-600">{errors.description.message}</p>}
+            <textarea
+              id="description"
+              rows={4}
+              aria-invalid={errors.description ? true : undefined}
+              aria-describedby={errors.description ? 'description-error' : undefined}
+              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              {...form.register('description')}
+            />
+            {errors.description && <p id="description-error" role="alert" className="text-xs text-red-600">{errors.description.message}</p>}
           </div>
           <div className="space-y-1">
             <label htmlFor="category_id" className="block text-sm font-medium text-slate-700">Category</label>

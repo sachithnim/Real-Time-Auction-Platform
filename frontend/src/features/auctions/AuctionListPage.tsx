@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { EmptyState } from '../../components/EmptyState'
 import { AuctionCardsSkeleton } from '../../components/Skeleton'
+import { onTabListKeyDown } from '../../components/tabs'
 import { Alert, Button, Card, StatusBadge } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -115,13 +116,14 @@ export function AuctionListPage() {
             ))}
           </select>
         </label>
-        <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist" aria-label="Show auctions" onKeyDown={onTabListKeyDown}>
           {visibleTabs.map((tab) => (
             <button
               key={tab.value}
               type="button"
               role="tab"
               aria-selected={status === tab.value}
+              tabIndex={status === tab.value ? 0 : -1}
               onClick={() => {
                 setStatus(tab.value)
                 setPage(1)

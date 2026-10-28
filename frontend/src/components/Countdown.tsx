@@ -29,7 +29,11 @@ export function Countdown({ target, label, antiSnipeSeconds = 0, endedText = 'En
       <div className={`font-mono text-2xl font-semibold tabular-nums ${urgent ? 'text-red-600' : 'text-slate-900'}`}>
         {left.ended ? endedText : formatRemaining(left)}
       </div>
-      {urgent && <div className="text-xs text-red-600">Bids now extend the auction</div>}
+      {urgent && (
+        <div role="status" className="text-xs text-red-600">
+          Bids now extend the auction
+        </div>
+      )}
     </div>
   )
 }
