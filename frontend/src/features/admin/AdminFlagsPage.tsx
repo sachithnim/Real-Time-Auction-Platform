@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { TableSkeleton } from '../../components/Skeleton'
 import { Alert, Button, Card } from '../../components/ui'
+import { onTabListKeyDown } from '../../components/tabs'
 import { useToast } from '../../components/useToast'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
@@ -36,13 +37,14 @@ export function AdminFlagsPage() {
             Patterns worth a second look. A flag never blocks a bid; it is a signal for you to review, not proof of wrongdoing.
           </p>
         </div>
-        <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist">
+        <div className="flex gap-1 rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist" aria-label="Show flags" onKeyDown={onTabListKeyDown}>
           {tabs.map((tab) => (
             <button
               key={tab.value}
               type="button"
               role="tab"
               aria-selected={status === tab.value}
+              tabIndex={status === tab.value ? 0 : -1}
               onClick={() => setStatus(tab.value)}
               className={`rounded-md px-3 py-1.5 text-sm font-medium ${status === tab.value ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
