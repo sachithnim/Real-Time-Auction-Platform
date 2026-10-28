@@ -39,11 +39,11 @@ export function BidHistory({ auctionId }: { auctionId: number }) {
             >
               <span className={bid.is_you ? 'text-indigo-700' : 'text-slate-700'}>
                 {bid.bidder}
-                {bid.type === 'AUTO' && <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">auto</span>}
+                {bid.type === 'AUTO' && <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">auto</span>}
               </span>
               <span className="flex items-center gap-3">
                 <span className="tabular-nums">{formatRs(bid.amount)}</span>
-                <time className="w-24 text-right text-xs text-slate-400" dateTime={bid.created_at} title={new Date(bid.created_at).toLocaleString()}>
+                <time className="w-24 text-right text-xs text-slate-500" dateTime={bid.created_at} title={new Date(bid.created_at).toLocaleString()}>
                   {formatRelative(bid.created_at, now)}
                 </time>
               </span>
