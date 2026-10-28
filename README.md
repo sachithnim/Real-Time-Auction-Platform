@@ -411,6 +411,8 @@ Live updates use **Laravel Reverb** (WebSockets, Pusher protocol). The React app
 - **One place for privacy.** `AuctionBroadcaster` builds every payload. Public events name bidders only by per-auction
   pseudonym ("Bidder 2"). They never carry user ids, emails, the reserve price or auto-bid maximums. A bidder's own
   maximum is sent only to them, on their private channel.
+- **Price and leader together.** `BidPlaced` and `PriceChanged` also carry the final leader's pseudonym, so the
+  screen updates the price and the leader badge in one step. `LeaderChanged` is still sent when the lead changes hands.
 - **Sent only after commit.** Events are created inside the bid or lifecycle transaction but implement
   `ShouldDispatchAfterCommit`, so a rolled-back change is never announced. A test proves a rollback leaks nothing, and
   fails if after-commit is removed.
