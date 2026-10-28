@@ -44,6 +44,29 @@ describe('applyAuctionEvent', () => {
     expect(result.kind === 'applied' && result.newBid).toMatchObject({ bidder: 'Bidder 1', is_you: false, type: 'AUTO' })
   })
 
+  it('updates the leader together with the price, so the badge never lags', () => {
+    const result = applyAuctionEvent(base, 'BidPlaced', event(4, {
+      bid: { id: 9, amount: 11_000, type: 'MANUAL', bidder: 'Bidder 3', created_at: '2030-01-01T11:00:00Z' },
+      current_price: 11_000, min_next_bid: 11_500, reserve_met: true, bids_count: 2, leader: 'Bidder 3',
+    }))
+
+    expect(result.kind === 'applied' && result.auction).toMatchObject({ current_price: 11_000, leader: 'Bidder 3', is_leading: false })
+  })
+
+  it('shows "You are leading" as soon as the price event says the viewer leads', () => {
+    const result = applyAuctionEvent(base, 'PriceChanged', event(4, {
+      current_price: 11_000, min_next_bid: 11_500, reserve_met: true, bids_count: 2, leader: 'Bidder 2',
+    }))
+
+    expect(result.kind === 'applied' && result.auction).toMatchObject({ leader: 'You', is_leading: true })
+  })
+
+  it('keeps the current leader when a price event carries none', () => {
+    const result = applyAuctionEvent(base, 'PriceChanged', event(4, { current_price: 11_000, min_next_bid: 11_500, reserve_met: true, bids_count: 2 }))
+
+    expect(result.kind === 'applied' && result.auction).toMatchObject({ current_price: 11_000, leader: 'Bidder 1' })
+  })
+
   it('marks the viewer as leading when they take the lead', () => {
     const result = applyAuctionEvent(base, 'LeaderChanged', event(4, { leader: 'Bidder 2', current_price: 11_000 }))
 
