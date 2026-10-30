@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyTheme, nextPreference, readPreference, resolveTheme, savePreference, THEME_KEY } from '../theme'
+import { applyTheme, readPreference, resolveTheme, savePreference, THEME_KEY } from '../theme'
 
 afterEach(() => {
   window.localStorage.clear()
@@ -15,12 +15,6 @@ describe('theme', () => {
   it('keeps an explicit choice whatever the device says', () => {
     expect(resolveTheme('light', true)).toBe('light')
     expect(resolveTheme('dark', false)).toBe('dark')
-  })
-
-  it('cycles light → dark → system → light', () => {
-    expect(nextPreference('light')).toBe('dark')
-    expect(nextPreference('dark')).toBe('system')
-    expect(nextPreference('system')).toBe('light')
   })
 
   it('remembers light or dark, and forgets the choice for system', () => {

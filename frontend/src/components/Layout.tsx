@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
-import { ThemeToggle } from './ThemeToggle'
+import { ThemeMenu } from './ThemeMenu'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-900'}`
@@ -71,11 +71,13 @@ export function Layout() {
               ))}
             </nav>
           </div>
+          {/* Account first, then the theme menu at the far right: a site-wide setting, kept in the same place on every page. */}
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <div className="hidden items-center gap-3 text-sm lg:flex">
               <Account user={user} onLogout={onLogout} />
             </div>
+            <span className="hidden h-6 w-px bg-slate-200 lg:block" aria-hidden />
+            <ThemeMenu />
             <button
               type="button"
               className="rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"

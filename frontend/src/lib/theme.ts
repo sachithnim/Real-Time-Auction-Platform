@@ -5,8 +5,6 @@ export type Theme = 'light' | 'dark'
 /** Also read by the inline script in index.html, which applies the theme before the first paint. */
 export const THEME_KEY = 'livebid-theme'
 
-const order: ThemePreference[] = ['light', 'dark', 'system']
-
 export function readPreference(): ThemePreference {
   try {
     const stored = window.localStorage.getItem(THEME_KEY)
@@ -35,11 +33,6 @@ export function systemPrefersDark(): boolean {
 
 export function resolveTheme(preference: ThemePreference, systemDark: boolean): Theme {
   return preference === 'system' ? (systemDark ? 'dark' : 'light') : preference
-}
-
-/** The toggle cycles light → dark → system. */
-export function nextPreference(preference: ThemePreference): ThemePreference {
-  return order[(order.indexOf(preference) + 1) % order.length]
 }
 
 export function applyTheme(theme: Theme) {
