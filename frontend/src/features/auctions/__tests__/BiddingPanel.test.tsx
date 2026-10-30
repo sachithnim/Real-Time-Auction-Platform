@@ -13,7 +13,7 @@ vi.mock('../api', async (importOriginal) => ({
   fetchMyAutoBid: vi.fn(),
 }))
 
-const bidder: User = { id: 5, name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER' }
+const bidder: User = { id: 5, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER' }
 
 const live = {
   id: 3, status: 'LIVE', starting_price: 20_000, current_price: 25_000, min_next_bid: 25_500, min_increment: 100,

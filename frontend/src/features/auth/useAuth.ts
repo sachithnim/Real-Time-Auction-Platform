@@ -4,10 +4,15 @@ import type { User } from '../../types/api'
 export interface LoginInput {
   email: string
   password: string
+  /** Keep the user signed in after the browser closes (a long-lived remember cookie). */
+  remember?: boolean
 }
 
-export interface RegisterInput extends LoginInput {
-  name: string
+export interface RegisterInput {
+  first_name: string
+  last_name: string
+  email: string
+  password: string
   password_confirmation: string
 }
 

@@ -12,8 +12,8 @@ import { ToastProvider } from '../toast'
 // No WebSocket in tests.
 vi.mock('../../lib/echo', () => ({ getEcho: () => null, onConnectionChange: () => () => {} }))
 
-const admin: User = { id: 1, name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN' }
-const bidder: User = { id: 2, name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER' }
+const admin: User = { id: 1, first_name: 'Platform', last_name: 'Admin', name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN' }
+const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER' }
 
 function renderLayout(user: User | null) {
   const auth = { user, isLoading: false, logout: vi.fn().mockResolvedValue(undefined) } as unknown as AuthApi

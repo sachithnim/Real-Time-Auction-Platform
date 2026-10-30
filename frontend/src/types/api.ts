@@ -7,6 +7,9 @@ export type BidType = 'MANUAL' | 'AUTO'
 
 export interface User {
   id: number
+  /** Null only for accounts created before names were split. */
+  first_name: string | null
+  last_name: string | null
   name: string
   email: string
   role: Role

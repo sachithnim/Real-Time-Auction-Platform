@@ -14,8 +14,8 @@ vi.mock('../api', async (importOriginal) => ({
   unwatchAuction: vi.fn(),
 }))
 
-const bidder: User = { id: 5, name: 'Bidder 1', email: 'bidder1@auction.test', role: 'BIDDER' }
-const admin: User = { id: 1, name: 'Admin', email: 'admin@auction.test', role: 'ADMIN' }
+const bidder: User = { id: 5, first_name: 'Bidder', last_name: '1', name: 'Bidder 1', email: 'bidder1@auction.test', role: 'BIDDER' }
+const admin: User = { id: 1, first_name: 'Admin', last_name: null, name: 'Admin', email: 'admin@auction.test', role: 'ADMIN' }
 
 /** Reads the auction from the query cache, the way the real pages do, so updates re-render. */
 function CachedWatchButton({ initial }: { initial: Auction }) {
