@@ -33,7 +33,11 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): UserResource
     {
-        if (! Auth::guard('web')->attempt($request->validated())) {
+        // "Remember me" also sets a long-lived remember cookie, so the user stays signed
+        // in after the session itself expires or the browser is closed.
+        $credentials = $request->safe()->only(['email', 'password']);
+
+        if (! Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
             // Same message for unknown email and wrong password: no account enumeration.
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
