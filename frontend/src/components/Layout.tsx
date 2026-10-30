@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
+import { Logo } from './Logo'
 import { ThemeMenu } from './ThemeMenu'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -59,8 +60,8 @@ export function Layout() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
-            <Link to="/" className="text-lg font-bold text-indigo-700" onClick={closeMenu}>
-              LiveBid
+            <Link to="/" aria-label="LiveBid home" onClick={closeMenu}>
+              <Logo />
             </Link>
             {/* The full bar needs room for six admin links; below that the menu button takes over. */}
             <nav className="hidden gap-1 lg:flex" aria-label="Main">

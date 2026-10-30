@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { Logo } from '../../components/Logo'
 import { ThemeMenu } from '../../components/ThemeMenu'
 
 const highlights = [
@@ -20,9 +21,8 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
         <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[#6366f1]/30 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-[#8b5cf6]/25 blur-3xl" aria-hidden />
 
-        <Link to="/" className="relative flex items-center gap-2 text-xl font-bold tracking-tight">
-          <LogoMark />
-          LiveBid
+        <Link to="/" aria-label="LiveBid home" className="relative self-start">
+          <Logo size="lg" tone="onDark" />
         </Link>
 
         <div className="relative space-y-8">
@@ -53,9 +53,8 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
 
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between px-4 py-4 sm:px-8">
-          <Link to="/" className="flex items-center gap-2 text-lg font-bold text-indigo-700 lg:invisible">
-            <LogoMark />
-            LiveBid
+          <Link to="/" aria-label="LiveBid home" className="lg:invisible">
+            <Logo />
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/" className="text-sm font-medium text-slate-600 hover:text-slate-900">
@@ -77,15 +76,5 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
         </main>
       </div>
     </div>
-  )
-}
-
-function LogoMark() {
-  return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6366f1] text-[#ffffff] shadow-sm" aria-hidden>
-      <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 4l6 6M11.5 6.5l6 6M13 5l-7 7 4 4 7-7M8 14l-5 5M4 21h9" />
-      </svg>
-    </span>
   )
 }
