@@ -37,7 +37,10 @@ class UserSeeder extends Seeder
     private function seedUser(string $name, string $email, UserRole $role): void
     {
         $user = User::firstOrNew(['email' => $email]);
+        [$first, $last] = explode(' ', $name, 2);
         $user->forceFill([
+            'first_name' => $first,
+            'last_name' => $last,
             'name' => $name,
             'password' => 'password',
             'role' => $role,

@@ -22,7 +22,8 @@ class AuthenticationTest extends TestCase
     public function test_user_can_register_and_is_logged_in_as_a_bidder(): void
     {
         $response = $this->postJson('/api/auth/register', [
-            'name' => 'Asha Perera',
+            'first_name' => 'Asha',
+            'last_name' => 'Perera',
             'email' => 'asha@example.com',
             'password' => 'secret-pass',
             'password_confirmation' => 'secret-pass',
@@ -31,6 +32,8 @@ class AuthenticationTest extends TestCase
         $response->assertCreated()
             ->assertExactJson(['data' => [
                 'id' => $response->json('data.id'),
+                'first_name' => 'Asha',
+                'last_name' => 'Perera',
                 'name' => 'Asha Perera',
                 'email' => 'asha@example.com',
                 'role' => 'BIDDER',
@@ -38,13 +41,15 @@ class AuthenticationTest extends TestCase
 
         $user = User::where('email', 'asha@example.com')->firstOrFail();
         $this->assertSame(UserRole::Bidder, $user->role);
+        $this->assertSame(['Asha', 'Perera', 'Asha Perera'], [$user->first_name, $user->last_name, $user->name]);
         $this->assertAuthenticatedAs($user, 'web');
     }
 
     public function test_registration_cannot_choose_the_admin_role(): void
     {
         $this->postJson('/api/auth/register', [
-            'name' => 'Mallory',
+            'first_name' => 'Mallory',
+            'last_name' => 'Smith',
             'email' => 'mallory@example.com',
             'password' => 'secret-pass',
             'password_confirmation' => 'secret-pass',
@@ -57,14 +62,15 @@ class AuthenticationTest extends TestCase
         User::factory()->create(['email' => 'taken@example.com']);
 
         $this->postJson('/api/auth/register', [
-            'name' => '',
+            'first_name' => '',
+            'last_name' => '',
             'email' => 'taken@example.com',
             'password' => 'short',
             'password_confirmation' => 'different',
         ])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'VALIDATION_FAILED')
-            ->assertJsonStructure(['error' => ['details' => ['errors' => ['name', 'email', 'password']]]]);
+            ->assertJsonStructure(['error' => ['details' => ['errors' => ['first_name', 'last_name', 'email', 'password']]]]);
 
         $this->assertGuest('web');
     }

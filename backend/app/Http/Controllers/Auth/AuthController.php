@@ -22,7 +22,8 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         // Self-registration always creates a bidder; admins are seeded.
-        $user = User::create($request->validated());
+        $data = $request->validated();
+        $user = User::create([...$data, 'name' => User::fullName($data['first_name'], $data['last_name'])]);
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
