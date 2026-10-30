@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -22,7 +23,8 @@ class AuthenticationTest extends TestCase
     public function test_user_can_register_and_is_logged_in_as_a_bidder(): void
     {
         $response = $this->postJson('/api/auth/register', [
-            'name' => 'Asha Perera',
+            'first_name' => 'Asha',
+            'last_name' => 'Perera',
             'email' => 'asha@example.com',
             'password' => 'secret-pass',
             'password_confirmation' => 'secret-pass',
@@ -31,6 +33,8 @@ class AuthenticationTest extends TestCase
         $response->assertCreated()
             ->assertExactJson(['data' => [
                 'id' => $response->json('data.id'),
+                'first_name' => 'Asha',
+                'last_name' => 'Perera',
                 'name' => 'Asha Perera',
                 'email' => 'asha@example.com',
                 'role' => 'BIDDER',
@@ -38,13 +42,15 @@ class AuthenticationTest extends TestCase
 
         $user = User::where('email', 'asha@example.com')->firstOrFail();
         $this->assertSame(UserRole::Bidder, $user->role);
+        $this->assertSame(['Asha', 'Perera', 'Asha Perera'], [$user->first_name, $user->last_name, $user->name]);
         $this->assertAuthenticatedAs($user, 'web');
     }
 
     public function test_registration_cannot_choose_the_admin_role(): void
     {
         $this->postJson('/api/auth/register', [
-            'name' => 'Mallory',
+            'first_name' => 'Mallory',
+            'last_name' => 'Smith',
             'email' => 'mallory@example.com',
             'password' => 'secret-pass',
             'password_confirmation' => 'secret-pass',
@@ -57,14 +63,15 @@ class AuthenticationTest extends TestCase
         User::factory()->create(['email' => 'taken@example.com']);
 
         $this->postJson('/api/auth/register', [
-            'name' => '',
+            'first_name' => '',
+            'last_name' => '',
             'email' => 'taken@example.com',
             'password' => 'short',
             'password_confirmation' => 'different',
         ])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'VALIDATION_FAILED')
-            ->assertJsonStructure(['error' => ['details' => ['errors' => ['name', 'email', 'password']]]]);
+            ->assertJsonStructure(['error' => ['details' => ['errors' => ['first_name', 'last_name', 'email', 'password']]]]);
 
         $this->assertGuest('web');
     }
@@ -82,6 +89,58 @@ class AuthenticationTest extends TestCase
             ->assertJsonMissingPath('data.password');
 
         $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_remember_me_sets_a_long_lived_remember_cookie(): void
+    {
+        $user = User::factory()->create(['email' => 'bidder@example.com']);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => 'bidder@example.com',
+            'password' => 'password',
+            'remember' => true,
+        ])->assertOk();
+
+        $response->assertCookie(Auth::guard('web')->getRecallerName());
+        $cookie = collect($response->headers->getCookies())
+            ->first(fn ($c) => $c->getName() === Auth::guard('web')->getRecallerName());
+        $this->assertGreaterThan(now()->addYear()->getTimestamp(), $cookie->getExpiresTime());
+        $this->assertNotNull($user->fresh()->remember_token);
+    }
+
+    public function test_login_without_remember_me_sets_no_remember_cookie(): void
+    {
+        User::factory()->create(['email' => 'bidder@example.com']);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'bidder@example.com',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertCookieMissing(Auth::guard('web')->getRecallerName());
+    }
+
+    public function test_remember_must_be_a_boolean(): void
+    {
+        $this->postJson('/api/auth/login', [
+            'email' => 'bidder@example.com',
+            'password' => 'password',
+            'remember' => 'forever',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['error' => ['details' => ['errors' => ['remember']]]]);
+    }
+
+    public function test_logout_replaces_the_remember_token(): void
+    {
+        $user = User::factory()->create(['email' => 'bidder@example.com']);
+        $this->postJson('/api/auth/login', ['email' => 'bidder@example.com', 'password' => 'password', 'remember' => true]);
+        $tokenAtLogin = $user->fresh()->remember_token;
+
+        $this->postJson('/api/auth/logout')->assertNoContent();
+
+        // A stolen remember cookie stops working once the user logs out.
+        $this->assertNotSame($tokenAtLogin, $user->fresh()->remember_token);
     }
 
     public function test_wrong_password_and_unknown_email_get_the_same_error(): void

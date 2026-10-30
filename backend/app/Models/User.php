@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 
 // 'role' is deliberately not fillable: a request can never promote itself to admin.
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['first_name', 'last_name', 'name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -74,6 +74,12 @@ class User extends Authenticatable
     public function isWatching(Auction $auction): bool
     {
         return $this->watchedAuctions()->whereKey($auction->id)->exists();
+    }
+
+    /** The display name kept in "name": first and last name joined by a space. */
+    public static function fullName(string $firstName, string $lastName): string
+    {
+        return trim($firstName.' '.$lastName);
     }
 
     public function isAdmin(): bool
