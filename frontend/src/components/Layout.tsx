@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
+import { Footer } from './Footer'
 import { Logo } from './Logo'
 import { ThemeMenu } from './ThemeMenu'
 import { Avatar, UserMenu } from './UserMenu'
@@ -51,7 +52,7 @@ export function Layout() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <a
         href="#main"
         className="sr-only rounded-md bg-indigo-600 text-sm font-semibold text-white shadow-lg focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2"
@@ -111,9 +112,10 @@ export function Layout() {
         )}
       </header>
       {/* tabIndex lets the skip link move focus here, not only scroll. */}
-      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-6 focus:outline-none">
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 focus:outline-none">
         <Outlet />
       </main>
+      <Footer />
     </div>
   )
 }
