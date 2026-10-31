@@ -13,7 +13,8 @@ import { auctionKeys, placeBid } from './api'
 import { bidSchema, type BidValues } from './bidSchema'
 import { quickBidAmounts } from './quickBids'
 
-export function BidForm({ auction }: { auction: Auction }) {
+/** `outbid`: the bidder had bid here and was overtaken; offer the new minimum in one tap. */
+export function BidForm({ auction, outbid = false }: { auction: Auction; outbid?: boolean }) {
   const queryClient = useQueryClient()
   const toast = useToast()
   const minimum = auction.min_next_bid ?? auction.starting_price
@@ -70,6 +71,24 @@ export function BidForm({ auction }: { auction: Auction }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-3" noValidate aria-label="Place a bid">
+      {outbid && (
+        <Alert tone="warning">
+          <strong>You have been outbid.</strong> The price is now {formatRs(auction.current_price)}. Bid {formatRs(minimum)} or more to lead again.
+          {/* A deliberate, labelled action (unlike the quick amounts), so it may place the bid directly. */}
+          <button
+            type="button"
+            disabled={mutation.isPending}
+            onClick={() => {
+              form.setValue('amount', minimum)
+              setError(null)
+              mutation.mutate(minimum)
+            }}
+            className="mt-2 block rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-60"
+          >
+            Bid {formatRs(minimum)} now
+          </button>
+        </Alert>
+      )}
       {error && <Alert>{error}</Alert>}
       <Field
         label="Your bid (Rs.)"
