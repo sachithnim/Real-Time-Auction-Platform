@@ -75,6 +75,82 @@ class PublicAuctionApiTest extends TestCase
         );
     }
 
+    public function test_listing_can_search_titles_by_every_word(): void
+    {
+        $telescope = Auction::factory()->live()->create(['title' => 'Antique Brass Telescope']);
+        Auction::factory()->live()->create(['title' => 'Brass Door Knocker']);
+        Auction::factory()->live()->create(['title' => 'Signed Cricket Bat']);
+
+        $this->getJson('/api/auctions?search=brass')->assertOk()->assertJsonCount(2, 'data');
+
+        // Every word must match, in any order, ignoring case.
+        $this->getJson('/api/auctions?search=telescope%20BRASS')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $telescope->id);
+    }
+
+    public function test_search_treats_like_wildcards_as_plain_text(): void
+    {
+        Auction::factory()->live()->create(['title' => '100% Silk Saree']);
+        Auction::factory()->live()->create(['title' => '1000 Year Old Coin']);
+
+        $this->getJson('/api/auctions?search='.urlencode('100%'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', '100% Silk Saree');
+
+        $this->getJson('/api/auctions?search=_')->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_search_never_finds_drafts(): void
+    {
+        Auction::factory()->create(['title' => 'Hidden Brass Draft']);
+
+        $this->getJson('/api/auctions?search=brass')->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_listing_can_sort_by_price(): void
+    {
+        $cheap = Auction::factory()->live()->create(['starting_price' => 1_000, 'current_price' => null]);
+        $mid = Auction::factory()->live()->create(['starting_price' => 500, 'current_price' => 20_000]);
+        $dear = Auction::factory()->scheduled()->create(['starting_price' => 50_000, 'current_price' => null]);
+
+        $ids = fn (string $sort) => array_column($this->getJson("/api/auctions?sort={$sort}")->json('data'), 'id');
+
+        // Ordered by what a bidder sees: the current price, or the starting price before any bid.
+        $this->assertSame([$dear->id, $mid->id, $cheap->id], $ids('price_high'));
+        $this->assertSame([$cheap->id, $mid->id, $dear->id], $ids('price_low'));
+    }
+
+    public function test_listing_can_sort_by_ending_soonest_and_newest(): void
+    {
+        $finished = Auction::factory()->completed()->create(['created_at' => now()->subDays(3)]);
+        $endsLater = Auction::factory()->live()->create([
+            'end_at' => now()->addHours(5), 'original_end_at' => now()->addHours(5), 'created_at' => now()->subDays(2),
+        ]);
+        $endsSoon = Auction::factory()->live()->create([
+            'end_at' => now()->addMinutes(5), 'original_end_at' => now()->addMinutes(5), 'created_at' => now()->subDay(),
+        ]);
+
+        $ids = fn (string $sort) => array_column($this->getJson("/api/auctions?sort={$sort}")->json('data'), 'id');
+
+        // Open auctions first by the soonest end; finished ones (already ended) after.
+        $this->assertSame([$endsSoon->id, $endsLater->id, $finished->id], $ids('ending_soon'));
+        $this->assertSame([$endsSoon->id, $endsLater->id, $finished->id], $ids('newest'));
+    }
+
+    public function test_listing_rejects_an_unknown_sort_or_a_huge_search(): void
+    {
+        $this->getJson('/api/auctions?sort=random')
+            ->assertUnprocessable()
+            ->assertJsonStructure(['error' => ['details' => ['errors' => ['sort']]]]);
+
+        $this->getJson('/api/auctions?search='.str_repeat('a', 101))
+            ->assertUnprocessable()
+            ->assertJsonStructure(['error' => ['details' => ['errors' => ['search']]]]);
+    }
+
     public function test_listing_can_filter_by_status_but_not_by_draft(): void
     {
         Auction::factory()->live()->create();
