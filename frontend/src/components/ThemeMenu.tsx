@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { applyTheme, readPreference, resolveTheme, savePreference, systemPrefersDark, type ThemePreference } from '../lib/theme'
+import { usePopover } from './usePopover'
 
 const options: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -14,10 +15,7 @@ const options: { value: ThemePreference; label: string }[] = [
  */
 export function ThemeMenu({ className = '' }: { className?: string }) {
   const [preference, setPreference] = useState<ThemePreference>(readPreference)
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const menuId = useId()
+  const { open, rootRef, buttonRef, menuId, toggle, close, buttonProps } = usePopover()
 
   useEffect(() => {
     applyTheme(resolveTheme(preference, systemPrefersDark()))
@@ -30,35 +28,10 @@ export function ThemeMenu({ className = '' }: { className?: string }) {
     return () => media.removeEventListener('change', follow)
   }, [preference])
 
-  // Close on a click outside or on Escape, like any other popup.
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    const onPointer = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setOpen(false)
-        buttonRef.current?.focus()
-      }
-    }
-    document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   const choose = (value: ThemePreference) => {
     savePreference(value)
     setPreference(value)
-    setOpen(false)
-    buttonRef.current?.focus()
+    close(true)
   }
 
   const current = options.find((option) => option.value === preference)!
@@ -67,11 +40,8 @@ export function ThemeMenu({ className = '' }: { className?: string }) {
     <div ref={rootRef} className={`relative ${className}`}>
       <button
         ref={buttonRef}
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
+        {...buttonProps}
+        onClick={toggle}
         aria-label={`Theme: ${current.label}`}
         title={`Theme: ${current.label}`}
         className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100 hover:text-slate-900"
