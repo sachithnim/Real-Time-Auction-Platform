@@ -10,7 +10,7 @@ export const adminKeys = {
   bids: (id: number) => ['admin', 'bids', id] as const,
   statistics: ['admin', 'statistics'] as const,
   monitor: ['admin', 'monitor'] as const,
-  flags: (status: FlagStatus | 'ALL') => ['admin', 'flags', status] as const,
+  flags: (status: FlagStatus | 'ALL', page = 1) => ['admin', 'flags', status, page] as const,
   categories: ['admin', 'categories'] as const,
 }
 
@@ -62,9 +62,10 @@ export async function cancelAuction(id: number, reason: string | null) {
   return data.data
 }
 
-export async function fetchAuctionEvents(id: number, type: string) {
+/** One page of the audit log, oldest first; "Load more" asks for the next page. */
+export async function fetchAuctionEvents(id: number, type: string, page = 1) {
   const { data } = await api.get<Paginated<AuctionEvent> & { meta: { users: AuditUsers } }>(`/api/admin/auctions/${id}/events`, {
-    params: { per_page: 200, type: type === 'ALL' ? undefined : type },
+    params: { per_page: 50, page, type: type === 'ALL' ? undefined : type },
   })
   return data
 }
@@ -98,9 +99,9 @@ export async function deleteCategory(id: number) {
   await api.delete(`/api/admin/categories/${id}`)
 }
 
-export async function fetchFlags(status: FlagStatus | 'ALL') {
+export async function fetchFlags(status: FlagStatus | 'ALL', page = 1) {
   const { data } = await api.get<Paginated<BidFlag> & { meta: { open_count: number } }>('/api/admin/flags', {
-    params: { status: status === 'ALL' ? undefined : status, per_page: 100 },
+    params: { status: status === 'ALL' ? undefined : status, page, per_page: 20 },
   })
   return data
 }
@@ -110,7 +111,10 @@ export async function reviewFlag(id: number) {
   return data.data
 }
 
-export async function fetchAdminBids(id: number) {
-  const { data } = await api.get<CursorPage<AdminBidRow>>(`/api/admin/auctions/${id}/bids`, { params: { per_page: 100 } })
+/** Newest bids first; pass the previous page's next_cursor to get older ones. */
+export async function fetchAdminBids(id: number, cursor: string | null = null) {
+  const { data } = await api.get<CursorPage<AdminBidRow>>(`/api/admin/auctions/${id}/bids`, {
+    params: { per_page: 50, cursor: cursor ?? undefined },
+  })
   return data
 }

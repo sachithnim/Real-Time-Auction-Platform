@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Pagination } from '../../components/Pagination'
 import { stackedTable } from '../../components/stackedTable'
 import { TableSkeleton } from '../../components/Skeleton'
 import { Alert, Button, Card, StatusBadge } from '../../components/ui'
@@ -14,8 +14,20 @@ const statuses: (AuctionStatus | 'ALL')[] = ['ALL', 'DRAFT', 'SCHEDULED', 'LIVE'
 
 export function AdminAuctionsPage() {
   useDocumentTitle('Manage auctions')
-  const [status, setStatus] = useState<AuctionStatus | 'ALL'>('ALL')
-  const [page, setPage] = useState(1)
+  // Status and page live in the URL, so returning from an auction keeps the same view.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusParam = searchParams.get('status')?.toUpperCase() as AuctionStatus | undefined
+  const status: AuctionStatus | 'ALL' = statusParam && statuses.includes(statusParam) ? statusParam : 'ALL'
+  const pageParam = Number(searchParams.get('page'))
+  const page = Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1
+  const setView = (next: { status?: AuctionStatus | 'ALL'; page?: number }) => {
+    const nextStatus = next.status ?? status
+    const nextPage = next.page ?? 1
+    const params = new URLSearchParams()
+    if (nextStatus !== 'ALL') params.set('status', nextStatus.toLowerCase())
+    if (nextPage > 1) params.set('page', String(nextPage))
+    setSearchParams(params, { replace: true })
+  }
   const navigate = useNavigate()
   const auctions = useQuery({
     queryKey: adminKeys.list(status, page),
@@ -34,10 +46,7 @@ export function AdminAuctionsPage() {
             <select
               className="ml-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value as AuctionStatus | 'ALL')
-                setPage(1)
-              }}
+              onChange={(e) => setView({ status: e.target.value as AuctionStatus | 'ALL' })}
             >
               {statuses.map((s) => (
                 <option key={s} value={s}>{s === 'ALL' ? 'All' : s}</option>
@@ -91,12 +100,15 @@ export function AdminAuctionsPage() {
         </Card>
       )}
 
-      {auctions.data && auctions.data.meta.last_page > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-          <span className="text-sm text-slate-500">Page {page} of {auctions.data.meta.last_page}</span>
-          <Button variant="secondary" disabled={page >= auctions.data.meta.last_page} onClick={() => setPage((p) => p + 1)}>Next</Button>
-        </div>
+      {auctions.data && auctions.data.data.length > 0 && (
+        <Pagination
+          page={auctions.data.meta.current_page}
+          lastPage={auctions.data.meta.last_page}
+          perPage={auctions.data.meta.per_page}
+          total={auctions.data.meta.total}
+          noun={['auction', 'auctions']}
+          onChange={(next) => setView({ page: next })}
+        />
       )}
     </div>
   )
