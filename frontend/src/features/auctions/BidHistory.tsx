@@ -1,21 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { formatRs } from '../../lib/money'
-import { serverNow } from '../../lib/serverClock'
 import { formatRelative } from '../../lib/time'
 import { RowsSkeleton } from '../../components/Skeleton'
 import { Card } from '../../components/ui'
+import { useNow } from '../../components/useNow'
+import type { AuctionStatus } from '../../types/api'
 import { auctionKeys, fetchBidHistory } from './api'
+import { emptyHistoryText } from './statusText'
 
-export function BidHistory({ auctionId }: { auctionId: number }) {
+export function BidHistory({ auctionId, status }: { auctionId: number; status: AuctionStatus }) {
   const history = useQuery({ queryKey: auctionKeys.bids(auctionId), queryFn: () => fetchBidHistory(auctionId) })
 
   // "2 min ago" has to keep moving even when no new bid arrives.
-  const [now, setNow] = useState(() => serverNow())
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(serverNow()), 30_000)
-    return () => window.clearInterval(timer)
-  }, [])
+  const now = useNow()
 
   // Bids already there when the page opened are not "new": only later ones fade in.
   const [firstIds, setFirstIds] = useState<Set<number> | null>(null)
@@ -28,7 +26,7 @@ export function BidHistory({ auctionId }: { auctionId: number }) {
       <h2 className="mb-3 font-semibold">Bid history</h2>
       {history.isPending && <RowsSkeleton rows={4} label="Loading bid history" />}
       {history.isError && <p className="text-sm text-red-600">Could not load the bid history.</p>}
-      {history.data && history.data.data.length === 0 && <p className="text-sm text-slate-500">No bids yet. Be the first!</p>}
+      {history.data && history.data.data.length === 0 && <p className="text-sm text-slate-500">{emptyHistoryText(status)}</p>}
       {history.data && history.data.data.length > 0 && (
         <ol className="divide-y divide-slate-100" aria-label="Bid history">
           {history.data.data.map((bid, index) => (

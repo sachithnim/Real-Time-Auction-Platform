@@ -25,7 +25,7 @@ describe('<BidHistory>', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={client}>
-        <BidHistory auctionId={3} />
+        <BidHistory auctionId={3} status="LIVE" />
       </QueryClientProvider>,
     )
 
