@@ -1,6 +1,4 @@
 import { Link } from 'react-router'
-import { Alert } from '../../components/ui'
-import { formatRs } from '../../lib/money'
 import type { Auction } from '../../types/api'
 import { useAuth } from '../auth/useAuth'
 import { AutoBidForm } from './AutoBidForm'
@@ -34,15 +32,7 @@ export function BiddingPanel({ auction }: { auction: Auction }) {
       {auction.is_leading ? (
         <p className="text-sm text-emerald-700">You are the highest bidder. Raise your maximum below to stay ahead automatically.</p>
       ) : (
-        <>
-          {outbid && (
-            <Alert tone="warning">
-              <strong>You have been outbid.</strong> The price is now {formatRs(auction.current_price)}. Bid{' '}
-              {formatRs(auction.min_next_bid ?? auction.current_price)} or more to lead again.
-            </Alert>
-          )}
-          <BidForm auction={auction} />
-        </>
+        <BidForm auction={auction} outbid={outbid} />
       )}
       <div className="border-t border-slate-100 pt-4">
         <AutoBidForm auction={auction} />

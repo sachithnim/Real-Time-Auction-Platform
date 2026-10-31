@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { LoadMore } from '../../components/Pagination'
 import { RowsSkeleton } from '../../components/Skeleton'
 import { adminKeys, fetchAuctionEvents } from './api'
 import { describeEvent, eventTitle, type AuditTone } from './auditFormat'
@@ -21,7 +22,16 @@ const tones: Record<AuditTone, string> = {
 /** The full audit trail of one auction, in the order it happened, in plain language. */
 export function AuditLog({ auctionId }: { auctionId: number }) {
   const [type, setType] = useState('ALL')
-  const events = useQuery({ queryKey: adminKeys.events(auctionId, type), queryFn: () => fetchAuctionEvents(auctionId, type) })
+  const events = useInfiniteQuery({
+    queryKey: adminKeys.events(auctionId, type),
+    queryFn: ({ pageParam }) => fetchAuctionEvents(auctionId, type, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.meta.current_page < last.meta.last_page ? last.meta.current_page + 1 : undefined),
+  })
+  // Every page brings the names of the people it mentions; together they cover the whole list.
+  const rows = events.data?.pages.flatMap((page) => page.data) ?? []
+  const users = Object.assign({}, ...(events.data?.pages.map((page) => page.meta.users) ?? []))
+  const total = events.data?.pages[0].meta.total ?? 0
 
   return (
     <div className="space-y-3">
@@ -34,11 +44,11 @@ export function AuditLog({ auctionId }: { auctionId: number }) {
         </select>
       </label>
       {events.isPending && <RowsSkeleton rows={6} label="Loading the audit log" />}
-      {events.data && events.data.data.length === 0 && <p className="text-sm text-slate-500">No events.</p>}
-      {events.data && (
+      {events.data && rows.length === 0 && <p className="text-sm text-slate-500">No events.</p>}
+      {events.data && rows.length > 0 && (
         <ol className="space-y-2" aria-label="Audit log">
-          {events.data.data.map((event) => {
-            const view = describeEvent(event, events.data.meta.users)
+          {rows.map((event) => {
+            const view = describeEvent(event, users)
             return (
               <li key={event.id} className="rounded-md border border-slate-200 bg-white p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -63,6 +73,12 @@ export function AuditLog({ auctionId }: { auctionId: number }) {
           })}
         </ol>
       )}
+      {rows.length > 0 && (
+        <p className="text-center text-xs text-slate-500">
+          Showing {rows.length} of {total} {total === 1 ? 'event' : 'events'}
+        </p>
+      )}
+      {events.hasNextPage && <LoadMore onClick={() => events.fetchNextPage()} loading={events.isFetchingNextPage} label="Load more events" />}
     </div>
   )
 }

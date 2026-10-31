@@ -9,6 +9,7 @@ use App\Http\Requests\ListPublicAuctionsRequest;
 use App\Http\Resources\AuctionResource;
 use App\Models\Auction;
 use App\Support\ServerTime;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -38,15 +39,48 @@ class AuctionController extends Controller
             ->when($request->boolean('watching'), fn ($query) => $query->whereHas(
                 'watchers', fn ($watchers) => $watchers->whereKey($viewer->id),
             ))
-            // Live first (ending soonest), then upcoming (starting soonest), then finished (most recent first).
-            ->orderByRaw("FIELD(status, 'LIVE', 'SCHEDULED', 'COMPLETED', 'CANCELLED')")
-            ->orderByRaw("CASE WHEN status = 'LIVE' THEN end_at END ASC")
-            ->orderByRaw("CASE WHEN status = 'SCHEDULED' THEN start_at END ASC")
-            ->orderByDesc('end_at')
+            ->when($request->validated('search'), fn ($query, $search) => $this->searchTitles($query, $search))
+            ->tap(fn ($query) => $this->applySort($query, $request->validated('sort')))
             ->orderByDesc('id')
             ->paginate($request->integer('per_page', 20));
 
         return AuctionResource::collection($auctions)->additional(ServerTime::meta());
+    }
+
+    /**
+     * Every word must appear in the title (in any order). LIKE wildcards typed by the
+     * user are escaped, so "100%" matches a literal percent sign.
+     *
+     * @param  Builder<Auction>  $query
+     */
+    private function searchTitles(Builder $query, string $search): void
+    {
+        foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            $query->where('title', 'like', '%'.addcslashes($word, '\\%_').'%');
+        }
+    }
+
+    /**
+     * @param  Builder<Auction>  $query
+     */
+    private function applySort(Builder $query, ?string $sort): void
+    {
+        match ($sort) {
+            // Auctions still open (live or upcoming) first, by the soonest end; finished ones after.
+            'ending_soon' => $query
+                ->orderByRaw("status IN ('LIVE', 'SCHEDULED') DESC")
+                ->orderBy('end_at'),
+            'newest' => $query->orderByDesc('created_at'),
+            // The price a bidder sees: the current price, or the starting price before any bid.
+            'price_high' => $query->orderByRaw('COALESCE(current_price, starting_price) DESC'),
+            'price_low' => $query->orderByRaw('COALESCE(current_price, starting_price) ASC'),
+            // Live first (ending soonest), then upcoming (starting soonest), then finished (most recent first).
+            default => $query
+                ->orderByRaw("FIELD(status, 'LIVE', 'SCHEDULED', 'COMPLETED', 'CANCELLED')")
+                ->orderByRaw("CASE WHEN status = 'LIVE' THEN end_at END ASC")
+                ->orderByRaw("CASE WHEN status = 'SCHEDULED' THEN start_at END ASC")
+                ->orderByDesc('end_at'),
+        };
     }
 
     public function show(Auction $auction): AuctionResource

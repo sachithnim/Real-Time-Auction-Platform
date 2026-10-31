@@ -1,16 +1,18 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ToastProvider } from '../../../components/toast'
 import type { Auction, User } from '../../../types/api'
 import { AuthContext, type AuthApi } from '../../auth/useAuth'
-import { fetchMyAutoBid } from '../api'
+import { fetchMyAutoBid, placeBid } from '../api'
 import { BiddingPanel } from '../BiddingPanel'
 
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api')>()),
   fetchMyAutoBid: vi.fn(),
+  placeBid: vi.fn(),
 }))
 
 const bidder: User = { id: 5, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER' }
@@ -47,6 +49,16 @@ describe('<BiddingPanel> outbid banner', () => {
 
     expect(banner()).toBeInTheDocument()
     expect(banner()!.closest('[role="status"]')).toHaveTextContent('The price is now Rs. 25,000. Bid Rs. 25,500 or more to lead again.')
+  })
+
+  it('places a bid at the new minimum in one tap', async () => {
+    vi.mocked(placeBid).mockResolvedValue({ auction: { ...live, is_leading: true, current_price: 25_500, min_next_bid: 26_000, sequence: 5 } } as Awaited<ReturnType<typeof placeBid>>)
+    renderPanel({ my_pseudonym: 'Bidder 2' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bid Rs. 25,500 now' }))
+
+    expect(placeBid).toHaveBeenCalledOnce()
+    expect(vi.mocked(placeBid).mock.calls[0].slice(0, 2)).toEqual([3, 25_500])
   })
 
   it('stays hidden for someone who has not bid yet', () => {

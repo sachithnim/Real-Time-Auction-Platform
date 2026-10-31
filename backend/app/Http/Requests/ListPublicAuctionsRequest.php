@@ -21,6 +21,10 @@ class ListPublicAuctionsRequest extends FormRequest
             'category' => ['nullable', 'string', 'exists:categories,slug'],
             // Only the signed-in bidder's own watchlist.
             'watching' => ['nullable', 'boolean'],
+            // Words in the title, e.g. ?search=brass telescope
+            'search' => ['nullable', 'string', 'max:100'],
+            // Default (omitted): live first, then upcoming, then finished.
+            'sort' => ['nullable', Rule::in(['ending_soon', 'newest', 'price_high', 'price_low'])],
         ];
     }
 }

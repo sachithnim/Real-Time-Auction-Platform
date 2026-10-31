@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BidHistoryRow } from '../../../types/api'
 import { auctionKeys, fetchBidHistory } from '../api'
@@ -39,5 +40,29 @@ describe('<BidHistory>', () => {
     const fresh = (await screen.findByText('Bidder 3')).closest('li')!
     expect(fresh).toHaveAttribute('data-new')
     expect(screen.getByText('Bidder 2').closest('li')).not.toHaveAttribute('data-new')
+  })
+
+  it('loads older bids below, newest first, without marking them as new', async () => {
+    const withCursor = (bids: BidHistoryRow[], next: string | null) =>
+      ({ data: bids, meta: { next_cursor: next } }) as Awaited<ReturnType<typeof fetchBidHistory>>
+    vi.mocked(fetchBidHistory).mockImplementation(async (_id, cursor) =>
+      cursor === 'older' ? withCursor([bid(2, 25_000), bid(1, 24_500)], null) : withCursor([bid(4, 26_000), bid(3, 25_500)], 'older'),
+    )
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <BidHistory auctionId={3} status="LIVE" />
+      </QueryClientProvider>,
+    )
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Load older bids' }))
+
+    await screen.findByText('Bidder 1')
+    const rows = within(screen.getByRole('list', { name: 'Bid history' })).getAllByRole('listitem')
+    expect(rows.map((row) => row.textContent?.slice(0, 8))).toEqual(['Bidder 4', 'Bidder 3', 'Bidder 2', 'Bidder 1'])
+    expect(rows.some((row) => row.hasAttribute('data-new'))).toBe(false)
+    expect(fetchBidHistory).toHaveBeenLastCalledWith(3, 'older')
+    // Nothing older left: the button goes away.
+    expect(screen.queryByRole('button', { name: 'Load older bids' })).toBeNull()
   })
 })

@@ -13,10 +13,12 @@ import { AuctionListPage } from './features/auctions/AuctionListPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { NotFoundPage } from './components/NotFoundPage'
+import { RouteError } from './components/RouteError'
 
 export const router = createBrowserRouter([
   {
     element: <Layout />,
+    errorElement: <RouteError />,
     children: [
       { path: '/', element: <AuctionListPage /> },
       { path: '/auctions/:id', element: <AuctionDetailPage /> },
@@ -32,6 +34,6 @@ export const router = createBrowserRouter([
     ],
   },
   // Full-screen pages with their own frame (AuthLayout), outside the main header.
-  { path: '/login', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
+  { path: '/register', element: <RegisterPage />, errorElement: <RouteError /> },
 ])

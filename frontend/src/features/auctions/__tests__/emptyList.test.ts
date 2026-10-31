@@ -26,6 +26,13 @@ describe('emptyListMessage', () => {
     expect(message.clear).toBe('status')
   })
 
+  it('offers to clear the search before anything else', () => {
+    const message = emptyListMessage('LIVE', 'art', ' brass ')
+
+    expect(message.title).toBe('No auctions match “brass”')
+    expect(message.clear).toBe('search')
+  })
+
   it('has nothing to clear when there are no auctions at all', () => {
     expect(emptyListMessage('ALL', null)).toMatchObject({ title: 'No auctions yet', clear: null })
   })

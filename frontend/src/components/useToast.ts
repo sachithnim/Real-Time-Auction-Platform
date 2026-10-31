@@ -5,6 +5,8 @@ export interface Toast {
   tone: 'info' | 'success' | 'warning' | 'error'
   title: string
   body?: string
+  /** One follow-up step, e.g. "View auction". Clicking it also dismisses the toast. */
+  action?: { label: string; onClick: () => void }
 }
 
 export interface ToastApi {

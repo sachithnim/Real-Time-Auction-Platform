@@ -2,13 +2,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
+import { ErrorState } from '../../components/ErrorState'
 import { NotFoundPage } from '../../components/NotFoundPage'
 import { AuctionDetailSkeleton } from '../../components/Skeleton'
-import { Alert, Card, StatusBadge } from '../../components/ui'
+import { Card, StatusBadge } from '../../components/ui'
 import { useChangeCount } from '../../components/useChangeCount'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { useNow } from '../../components/useNow'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
+import { bidCount } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
 import { serverNow } from '../../lib/serverClock'
 import { formatDateTime, formatDuration, formatFromNow } from '../../lib/time'
@@ -43,12 +45,9 @@ export function AuctionDetailPage() {
     return info.code === 'AUCTION_NOT_FOUND' ? (
       <NotFoundPage message="This auction does not exist." />
     ) : (
-      <Alert>
-        {friendlyMessage(info)}{' '}
-        <button type="button" className="font-semibold underline" onClick={() => auction.refetch()}>
-          Try again
-        </button>
-      </Alert>
+      <ErrorState title="Could not load this auction" onRetry={() => auction.refetch()}>
+        {friendlyMessage(info)}
+      </ErrorState>
     )
   }
 
@@ -104,7 +103,7 @@ export function AuctionDetailPage() {
                     {reserve.text}
                   </span>
                 )}
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{a.bids_count ?? 0} bids</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{bidCount(a.bids_count)}</span>
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { Pagination } from '../../components/Pagination'
 import { TableSkeleton } from '../../components/Skeleton'
 import { Alert, Button, Card } from '../../components/ui'
 import { onTabListKeyDown } from '../../components/tabs'
@@ -21,9 +22,10 @@ const tabs: { value: FlagStatus | 'ALL'; label: string }[] = [
 export function AdminFlagsPage() {
   useDocumentTitle('Suspicious bidding')
   const [status, setStatus] = useState<FlagStatus | 'ALL'>('OPEN')
+  const [page, setPage] = useState(1)
   const flags = useQuery({
-    queryKey: adminKeys.flags(status),
-    queryFn: () => fetchFlags(status),
+    queryKey: adminKeys.flags(status, page),
+    queryFn: () => fetchFlags(status, page),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
   })
@@ -45,7 +47,10 @@ export function AdminFlagsPage() {
               role="tab"
               aria-selected={status === tab.value}
               tabIndex={status === tab.value ? 0 : -1}
-              onClick={() => setStatus(tab.value)}
+              onClick={() => {
+                setStatus(tab.value)
+                setPage(1)
+              }}
               className={`rounded-md px-3 py-1.5 text-sm font-medium ${status === tab.value ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               {tab.label}
@@ -66,6 +71,16 @@ export function AdminFlagsPage() {
             </p>
           ) : (
             flags.data.data.map((flag) => <FlagCard key={flag.id} flag={flag} />)
+          )}
+          {flags.data.data.length > 0 && (
+            <Pagination
+              page={flags.data.meta.current_page}
+              lastPage={flags.data.meta.last_page}
+              perPage={flags.data.meta.per_page}
+              total={flags.data.meta.total}
+              noun={['flag', 'flags']}
+              onChange={setPage}
+            />
           )}
         </div>
       )}

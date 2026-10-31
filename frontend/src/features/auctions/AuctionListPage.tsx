@@ -1,16 +1,18 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { EmptyState } from '../../components/EmptyState'
+import { Pagination } from '../../components/Pagination'
+import { ErrorState } from '../../components/ErrorState'
 import { AuctionCardsSkeleton } from '../../components/Skeleton'
 import { onTabListKeyDown } from '../../components/tabs'
-import { Alert, Button, Card, StatusBadge } from '../../components/ui'
+import { Button, Card, StatusBadge } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { useNow } from '../../components/useNow'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { getEcho } from '../../lib/echo'
-import { resultLabels } from '../../lib/labels'
+import { bidCount, resultLabels } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
 import { formatDateTime, formatFromNow } from '../../lib/time'
 import type { Auction, AuctionStatus, Paginated } from '../../types/api'
@@ -19,18 +21,68 @@ import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useRealtimeStatus } from '../realtime/useRealtimeStatus'
 import { auctionKeys, fetchAuctions, fetchCategories, type AuctionListFilter } from './api'
 import { emptyListMessage } from './emptyList'
-import { readListParams, writeListParams, type ListParams } from './listParams'
+import { cardBadges, type CardBadge } from './cardBadges'
+import { readListParams, SEARCH_MAX, sortOptions, writeListParams, type AuctionSort, type ListParams } from './listParams'
 import { priceLabel } from './priceLabel'
 import { WatchButton } from './WatchButton'
 
-const tabs: { value: AuctionListFilter; label: string }[] = [
-  { value: 'ALL', label: 'All' },
-  { value: 'LIVE', label: 'Live' },
-  { value: 'SCHEDULED', label: 'Upcoming' },
-  { value: 'COMPLETED', label: 'Finished' },
+type Tab = { value: AuctionListFilter; label: string; icon: ReactNode }
+
+const iconProps = { viewBox: '0 0 24 24', className: 'h-4 w-4', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+
+const tabs: Tab[] = [
+  {
+    value: 'ALL',
+    label: 'All',
+    icon: (
+      <svg {...iconProps}>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    value: 'LIVE',
+    label: 'Live',
+    icon: (
+      <span className="relative flex h-4 w-4 items-center justify-center" aria-hidden>
+        <span className="absolute h-2.5 w-2.5 rounded-full bg-red-400 opacity-60 motion-safe:animate-ping" />
+        <span className="h-2 w-2 rounded-full bg-red-600" />
+      </span>
+    ),
+  },
+  {
+    value: 'SCHEDULED',
+    label: 'Upcoming',
+    icon: (
+      <svg {...iconProps}>
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M3 10h18M8 3v4M16 3v4" />
+      </svg>
+    ),
+  },
+  {
+    value: 'COMPLETED',
+    label: 'Finished',
+    icon: (
+      <svg {...iconProps}>
+        <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+      </svg>
+    ),
+  },
 ]
 
-const watchingTab: { value: AuctionListFilter; label: string } = { value: 'WATCHING', label: 'Watching' }
+const watchingTab: Tab = {
+  value: 'WATCHING',
+  label: 'Watching',
+  icon: (
+    <svg {...iconProps}>
+      <path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" />
+    </svg>
+  ),
+}
 
 interface ListingUpdate {
   id: number
@@ -49,19 +101,20 @@ export function AuctionListPage() {
   const visibleTabs = isBidder ? [...tabs, watchingTab] : tabs
   // Filters live in the URL, so "back" from an auction returns to the same view.
   const [searchParams, setSearchParams] = useSearchParams()
-  const { status: selected, category, page } = readListParams(searchParams)
+  const { status: selected, category, search, sort, page } = readListParams(searchParams)
   // The watchlist belongs to a signed-in bidder; after logging out, fall back to all auctions.
   const status = selected === 'WATCHING' && !isBidder ? 'ALL' : selected
   // Any filter change starts again from page 1, unless a page is given.
   const setFilters = (next: Partial<ListParams>) =>
-    setSearchParams(writeListParams({ status, category, page: 1, ...next }), { replace: true })
+    setSearchParams(writeListParams({ status, category, search, sort, page: 1, ...next }), { replace: true })
+  const params: ListParams = { status, category, search, sort, page }
   const queryClient = useQueryClient()
   const realtime = useRealtimeStatus(() => queryClient.invalidateQueries({ queryKey: auctionKeys.all }))
   const categories = useQuery({ queryKey: auctionKeys.categories, queryFn: fetchCategories, staleTime: 5 * 60_000 })
 
   const auctions = useQuery({
-    queryKey: auctionKeys.list(status, category, page),
-    queryFn: () => fetchAuctions(status, page, category),
+    queryKey: auctionKeys.list(params),
+    queryFn: () => fetchAuctions(params),
     placeholderData: keepPreviousData,
   })
 
@@ -97,54 +150,74 @@ export function AuctionListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-bold">Auctions</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Auctions</h1>
           <RealtimeBadge status={realtime} />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm text-slate-600">
-          <span className="sr-only">Category</span>
-          <select
-            aria-label="Category"
-            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
-            value={category ?? ''}
-            onChange={(e) => setFilters({ category: e.target.value || null })}
-          >
-            <option value="">All categories</option>
-            {categories.data?.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name} ({c.auctions_count ?? 0})
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg bg-white p-1 ring-1 ring-slate-200" role="tablist" aria-label="Show auctions" onKeyDown={onTabListKeyDown}>
-          {visibleTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              role="tab"
-              aria-selected={status === tab.value}
-              tabIndex={status === tab.value ? 0 : -1}
-              onClick={() => setFilters({ status: tab.value })}
-              className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium ${status === tab.value ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              {tab.label}
-            </button>
-          ))}
+
+        {/* The one place to choose what to show: underline tabs, scrollable on narrow screens. */}
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="flex min-w-max gap-6 border-b border-slate-200" role="tablist" aria-label="Show auctions" onKeyDown={onTabListKeyDown}>
+            {visibleTabs.map((tab) => {
+              const active = status === tab.value
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  tabIndex={active ? 0 : -1}
+                  onClick={() => setFilters({ status: tab.value })}
+                  className={`-mb-px flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-medium transition ${
+                    active ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchBox value={search} onSearch={(value) => setFilters({ search: value })} />
+          <div className="flex gap-3">
+            <select
+              aria-label="Category"
+              className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm sm:flex-none"
+              value={category ?? ''}
+              onChange={(e) => setFilters({ category: e.target.value || null })}
+            >
+              <option value="">All categories</option>
+              {categories.data?.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.name} ({c.auctions_count ?? 0})
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Sort by"
+              className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm sm:flex-none"
+              value={sort}
+              onChange={(e) => setFilters({ sort: e.target.value as AuctionSort })}
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
       {auctions.isPending && <AuctionCardsSkeleton />}
       {auctions.isError && (
-        <Alert>
-          {friendlyMessage(parseApiError(auctions.error))}{' '}
-          <button type="button" className="font-semibold underline" onClick={() => auctions.refetch()}>
-            Try again
-          </button>
-        </Alert>
+        <ErrorState title="Could not load auctions" onRetry={() => auctions.refetch()}>
+          {friendlyMessage(parseApiError(auctions.error))}
+        </ErrorState>
       )}
 
       {auctions.data && (
@@ -153,7 +226,8 @@ export function AuctionListPage() {
             <ListEmpty
               status={status}
               category={category}
-              onClear={(filter) => setFilters(filter === 'category' ? { category: null } : { status: 'ALL' })}
+              search={search}
+              onClear={(filter) => setFilters(filter === 'search' ? { search: '' } : filter === 'category' ? { category: null } : { status: 'ALL' })}
             />
           ) : (
             // While another tab or page loads, the previous results stay visible but faded.
@@ -162,23 +236,21 @@ export function AuctionListPage() {
               aria-busy={auctions.isPlaceholderData}
             >
               {auctions.data.data.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} />
+                // A status tab already says the status: the badge would repeat it on every card.
+                <AuctionCard key={auction.id} auction={auction} showStatus={status === 'ALL' || status === 'WATCHING'} />
               ))}
             </div>
           )}
 
-          {auctions.data.meta.last_page > 1 && (
-            <div className="flex items-center justify-center gap-3">
-              <Button variant="secondary" disabled={page <= 1} onClick={() => setFilters({ page: page - 1 })}>
-                Previous
-              </Button>
-              <span className="text-sm text-slate-500">
-                Page {auctions.data.meta.current_page} of {auctions.data.meta.last_page}
-              </span>
-              <Button variant="secondary" disabled={page >= auctions.data.meta.last_page} onClick={() => setFilters({ page: page + 1 })}>
-                Next
-              </Button>
-            </div>
+          {auctions.data.data.length > 0 && (
+            <Pagination
+              page={auctions.data.meta.current_page}
+              lastPage={auctions.data.meta.last_page}
+              perPage={auctions.data.meta.per_page}
+              total={auctions.data.meta.total}
+              noun={['auction', 'auctions']}
+              onChange={(next) => setFilters({ page: next })}
+            />
           )}
         </>
       )}
@@ -186,8 +258,18 @@ export function AuctionListPage() {
   )
 }
 
-function ListEmpty({ status, category, onClear }: { status: AuctionListFilter; category: string | null; onClear: (filter: 'category' | 'status') => void }) {
-  const message = emptyListMessage(status, category)
+function ListEmpty({
+  status,
+  category,
+  search,
+  onClear,
+}: {
+  status: AuctionListFilter
+  category: string | null
+  search: string
+  onClear: (filter: 'search' | 'category' | 'status') => void
+}) {
+  const message = emptyListMessage(status, category, search)
   const clear = message.clear
 
   return (
@@ -197,7 +279,7 @@ function ListEmpty({ status, category, onClear }: { status: AuctionListFilter; c
       action={
         clear && (
           <Button variant="secondary" onClick={() => onClear(clear)}>
-            {clear === 'category' ? 'Show all categories' : 'Show all auctions'}
+            {clear === 'search' ? 'Clear search' : clear === 'category' ? 'Show all categories' : 'Show all auctions'}
           </Button>
         )
       }
@@ -207,19 +289,98 @@ function ListEmpty({ status, category, onClear }: { status: AuctionListFilter; c
   )
 }
 
-function AuctionCard({ auction }: { auction: Auction }) {
+const badgeTones: Record<CardBadge['tone'], string> = {
+  good: 'bg-emerald-100 text-emerald-800',
+  warning: 'bg-amber-100 text-amber-900',
+  urgent: 'bg-red-100 text-red-800',
+}
+
+/**
+ * Searches as you type, once typing pauses, so each key press is not a request.
+ * Enter searches at once; the × clears.
+ */
+function SearchBox({ value, onSearch }: { value: string; onSearch: (value: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  const [synced, setSynced] = useState(value)
+
+  // The URL changed from elsewhere (back button, "Clear search"): show that instead.
+  if (value !== synced) {
+    setSynced(value)
+    setDraft(value)
+  }
+
+  // The parent passes a new function on every render; keep the latest without restarting the timer.
+  const onSearchRef = useRef(onSearch)
+  useEffect(() => {
+    onSearchRef.current = onSearch
+  })
+
+  useEffect(() => {
+    if (draft.trim() === value.trim()) {
+      return
+    }
+    const timer = window.setTimeout(() => onSearchRef.current(draft), 300)
+    return () => window.clearTimeout(timer)
+  }, [draft, value])
+
+  return (
+    <form
+      role="search"
+      className="relative flex-1"
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSearch(draft)
+      }}
+    >
+      <svg viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+        <circle cx="11" cy="11" r="7" />
+        <path d="M20 20l-3.5-3.5" />
+      </svg>
+      <input
+        type="search"
+        aria-label="Search auctions"
+        placeholder="Search auctions by title"
+        maxLength={SEARCH_MAX}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        className="block w-full rounded-md border border-slate-300 bg-white py-2 pr-9 pl-9 text-sm shadow-sm focus:ring-2 focus:ring-indigo-200 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+      />
+      {draft && (
+        <button
+          type="button"
+          aria-label="Clear search"
+          onClick={() => {
+            setDraft('')
+            onSearch('')
+          }}
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-700"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      )}
+    </form>
+  )
+}
+
+function AuctionCard({ auction, showStatus }: { auction: Auction; showStatus: boolean }) {
   const canWatch = useAuth().user?.role === 'BIDDER'
-  // Handed to the detail page so its "All auctions" link returns to these filters.
+  // Handed to the detail page so its back button returns to these filters.
   const listSearch = useLocation().search
+  // Every 15 s is enough for "Ending soon" to appear on time.
+  const badges = cardBadges(auction, useNow(15_000))
 
   return (
     <Link to={`/auctions/${auction.id}`} state={{ listSearch }} className="block transition hover:-translate-y-0.5">
       <Card className="h-full space-y-3 hover:ring-indigo-300">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-semibold leading-snug">{auction.title}</h2>
-          <div className="shrink-0">
-            <StatusBadge status={auction.status} />
-          </div>
+          {showStatus && (
+            <div className="shrink-0">
+              <StatusBadge status={auction.status} />
+            </div>
+          )}
         </div>
         {(auction.category || canWatch) && (
           <div className="flex items-center justify-between gap-2">
@@ -227,12 +388,21 @@ function AuctionCard({ auction }: { auction: Auction }) {
             <WatchButton auction={auction} />
           </div>
         )}
+        {badges.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {badges.map((badge) => (
+              <span key={badge.text} className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badgeTones[badge.tone]}`}>
+                {badge.text}
+              </span>
+            ))}
+          </div>
+        )}
         <p className="line-clamp-2 text-sm text-slate-600">{auction.description}</p>
         <div className="flex items-end justify-between">
           <div>
             <div className="text-xs text-slate-500">{priceLabel(auction)}</div>
             <div className="text-lg font-bold">{formatRs(auction.current_price ?? auction.starting_price)}</div>
-            <div className="text-xs text-slate-500">{auction.bids_count ?? 0} bids</div>
+            <div className="text-xs text-slate-500">{bidCount(auction.bids_count)}</div>
           </div>
           <div className="text-right">
             {auction.status === 'LIVE' && <Countdown target={auction.end_at} label="Ends in" />}

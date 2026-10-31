@@ -1,9 +1,10 @@
 import { api } from '../../lib/api'
+import type { ListParams } from './listParams'
 import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, Category, CursorPage, Paginated, Payment, PlaceBidResponse, Single } from '../../types/api'
 
 export const auctionKeys = {
   all: ['auctions'] as const,
-  list: (filter: AuctionListFilter, category: string | null, page: number) => ['auctions', 'list', filter, category ?? 'ALL', page] as const,
+  list: (params: ListParams) => ['auctions', 'list', params] as const,
   categories: ['categories'] as const,
   payment: (id: number) => ['auctions', 'payment', id] as const,
   detail: (id: number) => ['auctions', 'detail', id] as const,
@@ -14,11 +15,19 @@ export const auctionKeys = {
 /** A status tab, every auction, or the signed-in bidder's watchlist. */
 export type AuctionListFilter = AuctionStatus | 'ALL' | 'WATCHING'
 
-/** category is a category slug, or null for every category. */
-export async function fetchAuctions(filter: AuctionListFilter, page: number, category: string | null = null) {
+/** One page of the public list for the given tab, category (slug), search words and order. */
+export async function fetchAuctions({ status: filter, category, search, sort, page }: ListParams) {
   const status = filter === 'ALL' || filter === 'WATCHING' ? undefined : filter
   const { data } = await api.get<Paginated<Auction>>('/api/auctions', {
-    params: { status, watching: filter === 'WATCHING' ? 1 : undefined, category: category ?? undefined, page, per_page: 12 },
+    params: {
+      status,
+      watching: filter === 'WATCHING' ? 1 : undefined,
+      category: category ?? undefined,
+      search: search.trim() || undefined,
+      sort: sort === 'default' ? undefined : sort,
+      page,
+      per_page: 9, // a full 3 × 3 grid on wide screens
+    },
   })
   return data
 }
@@ -62,8 +71,9 @@ export async function fetchAuction(id: number) {
   return data.data
 }
 
-export async function fetchBidHistory(id: number) {
-  const { data } = await api.get<CursorPage<BidHistoryRow>>(`/api/auctions/${id}/bids`, { params: { per_page: 50 } })
+/** Newest bids first; pass the previous page's next_cursor to get older ones. */
+export async function fetchBidHistory(id: number, cursor: string | null = null) {
+  const { data } = await api.get<CursorPage<BidHistoryRow>>(`/api/auctions/${id}/bids`, { params: { per_page: 50, cursor: cursor ?? undefined } })
   return data
 }
 
