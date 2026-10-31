@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { LoadMore } from '../../components/Pagination'
 import { DashboardSkeleton, RowsSkeleton } from '../../components/Skeleton'
 import { Alert, Button, Card, StatusBadge } from '../../components/ui'
 import { onTabListKeyDown } from '../../components/tabs'
@@ -174,16 +175,23 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function AdminBids({ auctionId }: { auctionId: number }) {
-  const bids = useQuery({ queryKey: adminKeys.bids(auctionId), queryFn: () => fetchAdminBids(auctionId) })
+  const bids = useInfiniteQuery({
+    queryKey: adminKeys.bids(auctionId),
+    queryFn: ({ pageParam }) => fetchAdminBids(auctionId, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.meta.next_cursor ?? undefined,
+  })
+  const rows = bids.data?.pages.flatMap((page) => page.data) ?? []
 
   if (bids.isPending) {
     return <RowsSkeleton rows={4} label="Loading bids" />
   }
-  if (!bids.data || bids.data.data.length === 0) {
+  if (rows.length === 0) {
     return <p className="text-sm text-slate-500">No bids.</p>
   }
 
   return (
+    <>
     <table className="min-w-full text-sm">
       <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
         <tr>
@@ -194,7 +202,7 @@ function AdminBids({ auctionId }: { auctionId: number }) {
         </tr>
       </thead>
       <tbody className="divide-y divide-slate-100">
-        {bids.data.data.map((bid) => (
+        {rows.map((bid) => (
           <tr key={bid.id}>
             <td className="py-2">{bid.bidder.name} <span className="text-slate-500">({bid.bidder.email} · {bid.bidder.pseudonym})</span></td>
             <td className="py-2">{bid.type}</td>
@@ -204,5 +212,7 @@ function AdminBids({ auctionId }: { auctionId: number }) {
         ))}
       </tbody>
     </table>
+    {bids.hasNextPage && <LoadMore onClick={() => bids.fetchNextPage()} loading={bids.isFetchingNextPage} label="Load older bids" />}
+    </>
   )
 }
