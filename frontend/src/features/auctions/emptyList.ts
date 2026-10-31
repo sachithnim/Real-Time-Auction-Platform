@@ -4,12 +4,15 @@ export interface EmptyListMessage {
   icon: string
   title: string
   body: string
-  /** The filter to clear to see more, if any: the category first, then the status tab. */
-  clear: 'category' | 'status' | null
+  /** The filter to clear to see more, if any: the search first, then the category, then the status tab. */
+  clear: 'search' | 'category' | 'status' | null
 }
 
 /** What to say when the auction list is empty, depending on why it is empty. */
-export function emptyListMessage(status: AuctionListFilter, category: string | null): EmptyListMessage {
+export function emptyListMessage(status: AuctionListFilter, category: string | null, search = ''): EmptyListMessage {
+  if (search.trim()) {
+    return { icon: '🔍', title: `No auctions match “${search.trim()}”`, body: 'Check the spelling, or try fewer or different words.', clear: 'search' }
+  }
   if (category) {
     return { icon: '🏷️', title: 'Nothing in this category here yet', body: 'Try another category, or see every category at once.', clear: 'category' }
   }
