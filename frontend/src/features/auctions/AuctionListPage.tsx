@@ -1,22 +1,25 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { EmptyState } from '../../components/EmptyState'
 import { AuctionCardsSkeleton } from '../../components/Skeleton'
 import { onTabListKeyDown } from '../../components/tabs'
 import { Alert, Button, Card, StatusBadge } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
+import { useNow } from '../../components/useNow'
 import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { getEcho } from '../../lib/echo'
 import { resultLabels } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
+import { formatDateTime, formatFromNow } from '../../lib/time'
 import type { Auction, AuctionStatus, Paginated } from '../../types/api'
 import { useAuth } from '../auth/useAuth'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useRealtimeStatus } from '../realtime/useRealtimeStatus'
 import { auctionKeys, fetchAuctions, fetchCategories, type AuctionListFilter } from './api'
 import { emptyListMessage } from './emptyList'
+import { readListParams, writeListParams, type ListParams } from './listParams'
 import { priceLabel } from './priceLabel'
 import { WatchButton } from './WatchButton'
 
@@ -44,11 +47,14 @@ export function AuctionListPage() {
   const { user } = useAuth()
   const isBidder = user?.role === 'BIDDER'
   const visibleTabs = isBidder ? [...tabs, watchingTab] : tabs
-  const [selected, setStatus] = useState<AuctionListFilter>('ALL')
+  // Filters live in the URL, so "back" from an auction returns to the same view.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { status: selected, category, page } = readListParams(searchParams)
   // The watchlist belongs to a signed-in bidder; after logging out, fall back to all auctions.
   const status = selected === 'WATCHING' && !isBidder ? 'ALL' : selected
-  const [category, setCategory] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
+  // Any filter change starts again from page 1, unless a page is given.
+  const setFilters = (next: Partial<ListParams>) =>
+    setSearchParams(writeListParams({ status, category, page: 1, ...next }), { replace: true })
   const queryClient = useQueryClient()
   const realtime = useRealtimeStatus(() => queryClient.invalidateQueries({ queryKey: auctionKeys.all }))
   const categories = useQuery({ queryKey: auctionKeys.categories, queryFn: fetchCategories, staleTime: 5 * 60_000 })
@@ -103,10 +109,7 @@ export function AuctionListPage() {
             aria-label="Category"
             className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
             value={category ?? ''}
-            onChange={(e) => {
-              setCategory(e.target.value || null)
-              setPage(1)
-            }}
+            onChange={(e) => setFilters({ category: e.target.value || null })}
           >
             <option value="">All categories</option>
             {categories.data?.map((c) => (
@@ -124,10 +127,7 @@ export function AuctionListPage() {
               role="tab"
               aria-selected={status === tab.value}
               tabIndex={status === tab.value ? 0 : -1}
-              onClick={() => {
-                setStatus(tab.value)
-                setPage(1)
-              }}
+              onClick={() => setFilters({ status: tab.value })}
               className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium ${status === tab.value ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               {tab.label}
@@ -153,14 +153,7 @@ export function AuctionListPage() {
             <ListEmpty
               status={status}
               category={category}
-              onClear={(filter) => {
-                if (filter === 'category') {
-                  setCategory(null)
-                } else {
-                  setStatus('ALL')
-                }
-                setPage(1)
-              }}
+              onClear={(filter) => setFilters(filter === 'category' ? { category: null } : { status: 'ALL' })}
             />
           ) : (
             // While another tab or page loads, the previous results stay visible but faded.
@@ -176,13 +169,13 @@ export function AuctionListPage() {
 
           {auctions.data.meta.last_page > 1 && (
             <div className="flex items-center justify-center gap-3">
-              <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <Button variant="secondary" disabled={page <= 1} onClick={() => setFilters({ page: page - 1 })}>
                 Previous
               </Button>
               <span className="text-sm text-slate-500">
                 Page {auctions.data.meta.current_page} of {auctions.data.meta.last_page}
               </span>
-              <Button variant="secondary" disabled={page >= auctions.data.meta.last_page} onClick={() => setPage((p) => p + 1)}>
+              <Button variant="secondary" disabled={page >= auctions.data.meta.last_page} onClick={() => setFilters({ page: page + 1 })}>
                 Next
               </Button>
             </div>
@@ -216,9 +209,11 @@ function ListEmpty({ status, category, onClear }: { status: AuctionListFilter; c
 
 function AuctionCard({ auction }: { auction: Auction }) {
   const canWatch = useAuth().user?.role === 'BIDDER'
+  // Handed to the detail page so its "All auctions" link returns to these filters.
+  const listSearch = useLocation().search
 
   return (
-    <Link to={`/auctions/${auction.id}`} className="block transition hover:-translate-y-0.5">
+    <Link to={`/auctions/${auction.id}`} state={{ listSearch }} className="block transition hover:-translate-y-0.5">
       <Card className="h-full space-y-3 hover:ring-indigo-300">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-semibold leading-snug">{auction.title}</h2>
@@ -243,12 +238,31 @@ function AuctionCard({ auction }: { auction: Auction }) {
             {auction.status === 'LIVE' && <Countdown target={auction.end_at} label="Ends in" />}
             {auction.status === 'SCHEDULED' && <Countdown target={auction.start_at} label="Starts in" endedText="Starting…" />}
             {auction.status === 'COMPLETED' && auction.result && (
-              <span className="text-sm font-medium text-violet-700">{resultLabels[auction.result]}</span>
+              <>
+                <span className="block text-sm font-medium text-violet-700">{resultLabels[auction.result]}</span>
+                <ClosedAgo label="Ended" iso={auction.ended_at ?? auction.end_at} />
+              </>
             )}
-            {auction.status === 'CANCELLED' && <span className="text-sm font-medium text-red-700">Cancelled</span>}
+            {auction.status === 'CANCELLED' && (
+              <>
+                <span className="block text-sm font-medium text-red-700">Cancelled</span>
+                {auction.cancelled_at && <ClosedAgo label="Cancelled" iso={auction.cancelled_at} />}
+              </>
+            )}
           </div>
         </div>
       </Card>
     </Link>
+  )
+}
+
+/** "Ended 3 days ago" under a closed auction's result, with the exact time on hover. */
+function ClosedAgo({ label, iso }: { label: string; iso: string }) {
+  const now = useNow(60_000)
+
+  return (
+    <time dateTime={iso} title={formatDateTime(iso)} className="block text-xs text-slate-500">
+      {label} {formatFromNow(iso, now)}
+    </time>
   )
 }
