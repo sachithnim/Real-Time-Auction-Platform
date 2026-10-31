@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDuration, formatRelative } from '../time'
+import { formatDateTime, formatDuration, formatFromNow, formatRelative } from '../time'
 
 describe('formatRelative', () => {
   const now = Date.parse('2026-10-28T12:00:00Z')
@@ -37,5 +37,37 @@ describe('formatDuration', () => {
     [600, '10 min'],
   ])('%s seconds reads "%s"', (seconds, text) => {
     expect(formatDuration(seconds)).toBe(text)
+  })
+})
+
+describe('formatFromNow', () => {
+  const now = Date.parse('2026-10-28T12:00:00Z')
+  const at = (seconds: number) => new Date(now + seconds * 1000).toISOString()
+
+  it.each([
+    [30, 'in under a minute'],
+    [60, 'in 1 min'],
+    [59 * 60, 'in 59 min'],
+    [60 * 60, 'in 1 h'],
+    [2 * 3_600 + 14 * 60, 'in 2 h 14 min'],
+    [24 * 3_600, 'in 1 day'],
+    [3 * 86_400 + 3_600, 'in 3 days'],
+  ])('%s seconds ahead reads "%s"', (seconds, text) => {
+    expect(formatFromNow(at(seconds), now)).toBe(text)
+  })
+
+  it.each([
+    [-30, 'just now'],
+    [-5 * 60, '5 min ago'],
+    [-(3 * 3_600), '3 h ago'],
+    [-(86_400 + 60), '1 day ago'],
+    [-(29 * 86_400), '29 days ago'],
+  ])('%s seconds back reads "%s"', (seconds, text) => {
+    expect(formatFromNow(at(seconds), now)).toBe(text)
+  })
+
+  it('shows the full date beyond 30 days', () => {
+    const old = at(-31 * 86_400)
+    expect(formatFromNow(old, now)).toBe(formatDateTime(old))
   })
 })
