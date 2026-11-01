@@ -98,4 +98,18 @@ describe('audit log wording', () => {
     expect(declined.title).toBe('Payment declined')
     expect(declined.summary).toBe("Bidder 1's payment of Rs. 15,500 by VISA •••• 0002 was declined: the card was declined.")
   })
+
+  it('describes photo changes in plain words', () => {
+    expect(describeEvent(event('PHOTOS_CHANGED', { action: 'added', image_ids: [4, 5], count_before: 1, count_after: 3 }))).toMatchObject({
+      title: 'Photos changed',
+      summary: 'Added 2 photos.',
+      details: [{ label: 'Photos', value: '1 → 3' }],
+    })
+    expect(describeEvent(event('PHOTOS_CHANGED', { action: 'removed', image_ids: [4], count_before: 3, count_after: 2, was_cover: true })).summary).toBe(
+      'Removed the cover photo.',
+    )
+    expect(describeEvent(event('PHOTOS_CHANGED', { action: 'reordered', image_ids: [5, 4], cover_changed: true })).summary).toBe(
+      'Reordered the photos and chose a new cover.',
+    )
+  })
 })

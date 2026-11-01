@@ -28,6 +28,8 @@ class AuctionResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            // In display order; the first is the cover. Lists eager-load them.
+            'images' => AuctionImageResource::collection($this->images),
             'category' => $this->category === null ? null : [
                 'id' => $this->category->id, 'name' => $this->category->name, 'slug' => $this->category->slug,
             ],

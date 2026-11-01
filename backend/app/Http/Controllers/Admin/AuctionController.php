@@ -28,7 +28,7 @@ class AuctionController extends Controller
         Gate::authorize('manage', Auction::class);
 
         $auctions = Auction::query()
-            ->with('category')
+            ->with(['category', 'images'])
             ->withCount('bids')
             ->when($request->validated('status'), fn ($query, $status) => $query->where('status', $status))
             ->orderByDesc('id')
@@ -76,7 +76,7 @@ class AuctionController extends Controller
 
     private function respond(Auction $auction, int $status = 200): JsonResponse
     {
-        $auction->load(['category', 'payment'])->loadCount('bids');
+        $auction->load(['category', 'payment', 'images'])->loadCount('bids');
 
         return (new AdminAuctionResource($auction))
             ->additional(ServerTime::meta())

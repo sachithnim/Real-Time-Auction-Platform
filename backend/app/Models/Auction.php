@@ -74,6 +74,12 @@ class Auction extends Model
         return $this->belongsToMany(User::class, 'watchlists')->withTimestamps();
     }
 
+    /** Item photos in display order; the first is the cover. */
+    public function images(): HasMany
+    {
+        return $this->hasMany(AuctionImage::class)->orderBy('position')->orderBy('id');
+    }
+
     /** The winner's payment, once the auction is sold. */
     public function payment(): HasOne
     {

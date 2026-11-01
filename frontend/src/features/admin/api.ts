@@ -1,6 +1,6 @@
 import { api } from '../../lib/api'
 import type { AuditUsers } from './auditFormat'
-import type { AdminAuction, AdminBidRow, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, Category, CursorPage, FlagStatus, MonitorSnapshot, Paginated, Single } from '../../types/api'
+import type { AdminAuction, AdminBidRow, AuctionImage, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, Category, CursorPage, FlagStatus, MonitorSnapshot, Paginated, Single } from '../../types/api'
 
 export const adminKeys = {
   all: ['admin'] as const,
@@ -117,4 +117,26 @@ export async function fetchAdminBids(id: number, cursor: string | null = null) {
     params: { per_page: 50, cursor: cursor ?? undefined },
   })
   return data
+}
+
+/** Uploads photos (added after the existing ones). Uploads get a longer timeout than other calls. */
+export async function uploadAuctionImages(id: number, files: File[], onProgress?: (fraction: number) => void) {
+  const body = new FormData()
+  files.forEach((file) => body.append('images[]', file))
+  const { data } = await api.post<{ data: AuctionImage[] }>(`/api/admin/auctions/${id}/images`, body, {
+    timeout: 120_000,
+    onUploadProgress: (e) => onProgress?.(e.total ? e.loaded / e.total : 0),
+  })
+  return data.data
+}
+
+export async function deleteAuctionImage(id: number, imageId: number) {
+  const { data } = await api.delete<{ data: AuctionImage[] }>(`/api/admin/auctions/${id}/images/${imageId}`)
+  return data.data
+}
+
+/** `ids`: every photo of the auction in the new order; the first becomes the cover. */
+export async function reorderAuctionImages(id: number, ids: number[]) {
+  const { data } = await api.put<{ data: AuctionImage[] }>(`/api/admin/auctions/${id}/images/order`, { ids })
+  return data.data
 }

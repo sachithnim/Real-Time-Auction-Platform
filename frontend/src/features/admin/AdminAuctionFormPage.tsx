@@ -7,7 +7,10 @@ import { Alert, Button, Card, Field, PageLoader } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
 import type { AdminAuction } from '../../types/api'
-import { adminKeys, createAuction, fetchAdminAuction, fetchAdminCategories, updateAuction, type AuctionInput } from './api'
+import { useToast } from '../../components/useToast'
+import { adminKeys, createAuction, fetchAdminAuction, fetchAdminCategories, updateAuction, uploadAuctionImages, type AuctionInput } from './api'
+import { PhotoManager } from './PhotoManager'
+import { PhotoPicker } from './PhotoPicker'
 import { auctionFormSchema, isoToLocalInput, localInputToIso, type AuctionFormValues } from './auctionForm'
 
 export function AdminAuctionFormPage() {
@@ -50,7 +53,11 @@ const numberField = { valueAsNumber: true } as const
 function AuctionForm({ auction }: { auction: AdminAuction | null }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const toast = useToast()
   const [error, setError] = useState<string | null>(null)
+  // New auctions only: photos picked before the auction exists, uploaded after it is created.
+  const [photos, setPhotos] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
   const form = useForm<AuctionFormValues>({ resolver: zodResolver(auctionFormSchema), defaultValues: defaults(auction) })
   const errors = form.formState.errors
   const categories = useQuery({ queryKey: adminKeys.categories, queryFn: fetchAdminCategories })
@@ -66,6 +73,17 @@ function AuctionForm({ auction }: { auction: AdminAuction | null }) {
       }
       try {
         const saved = auction ? await updateAuction(auction.id, input) : await createAuction(input)
+        if (!auction && photos.length > 0) {
+          setUploading(true)
+          try {
+            await uploadAuctionImages(saved.id, photos)
+          } catch (e) {
+            // The auction is saved either way; the photos can be added again on its page.
+            toast.push({ tone: 'warning', title: 'Auction saved, but the photos did not upload', body: `${friendlyMessage(parseApiError(e))} Add them again below.` })
+          } finally {
+            setUploading(false)
+          }
+        }
         queryClient.invalidateQueries({ queryKey: adminKeys.all })
         navigate(`/admin/auctions/${saved.id}`)
       } catch (e) {
@@ -140,7 +158,10 @@ function AuctionForm({ auction }: { auction: AdminAuction | null }) {
             <Field label="Max extensions" type="number" step={1} {...form.register('max_extensions', numberField)} error={errors.max_extensions?.message} />
           </fieldset>
 
-          <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+          {!auction && <PhotoPicker files={photos} onChange={setPhotos} />}
+
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            {uploading && <span className="mr-auto text-sm text-slate-500" role="status">Uploading photos…</span>}
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
             <Button type="submit" variant={auction ? 'primary' : 'secondary'} busy={form.formState.isSubmitting}>
               {auction ? 'Save changes' : 'Save as draft'}
@@ -153,6 +174,8 @@ function AuctionForm({ auction }: { auction: AdminAuction | null }) {
           </div>
         </form>
       </Card>
+      {/* Editing a draft: its photos are managed here too, not only on its detail page. */}
+      {auction && <PhotoManager auction={auction} />}
     </div>
   )
 }

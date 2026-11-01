@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
+import { CoverPhoto } from '../../components/CoverPhoto'
 import { EmptyState } from '../../components/EmptyState'
 import { Pagination } from '../../components/Pagination'
 import { ErrorState } from '../../components/ErrorState'
@@ -373,7 +374,9 @@ function AuctionCard({ auction, showStatus }: { auction: Auction; showStatus: bo
 
   return (
     <Link to={`/auctions/${auction.id}`} state={{ listSearch }} className="block transition hover:-translate-y-0.5">
-      <Card className="h-full space-y-3 hover:ring-indigo-300">
+      <Card className="h-full space-y-3 overflow-hidden hover:ring-indigo-300">
+        {/* Bleeds to the card's edges: the Card's own padding is p-5. */}
+        <CoverPhoto image={auction.images?.[0]} className="-mx-5 -mt-5 mb-4 aspect-[4/3] w-[calc(100%+2.5rem)] max-w-none" />
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-semibold leading-snug">{auction.title}</h2>
           {showStatus && (

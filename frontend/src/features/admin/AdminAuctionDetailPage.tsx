@@ -15,6 +15,7 @@ import { formatDuration } from '../../lib/time'
 import { AUCTION_EVENTS } from '../realtime/auctionEvents'
 import { adminKeys, cancelAuction, fetchAdminAuction, fetchAdminBids, scheduleAuction } from './api'
 import { AuditLog } from './AuditLog'
+import { PhotoManager } from './PhotoManager'
 
 export function AdminAuctionDetailPage() {
   const id = Number(useParams().id)
@@ -138,6 +139,8 @@ export function AdminAuctionDetailPage() {
           }
         />
       </div>
+
+      <PhotoManager auction={a} />
 
       <Card>
         <div className="mb-4 flex gap-2 border-b border-slate-100" role="tablist" aria-label="Auction records" onKeyDown={onTabListKeyDown}>

@@ -34,7 +34,7 @@ export function LoginPage() {
     try {
       const user = await login(values)
       const from = (location.state as { from?: string } | null)?.from
-      navigate(from ?? (user.role === 'ADMIN' ? '/admin/auctions' : '/'), { replace: true })
+      navigate(from ?? (user.role === 'ADMIN' ? '/admin' : '/'), { replace: true })
     } catch (e) {
       const info = parseApiError(e)
       const fields = fieldErrors(info)

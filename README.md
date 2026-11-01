@@ -97,13 +97,16 @@ All demo accounts use the password `password` (local development only).
 Bidders never see each other's names: in an auction they appear as per-auction pseudonyms ("Bidder 2"). Only admins
 see real names.
 
-The seeders create the bid increment tiers and one demo auction in each lifecycle state (draft, scheduled,
-live, completed). Reset the demo data at any time with
+The seeders create the bid increment tiers and a catalogue of 16 demo auctions with photos: six live with
+bidding under way (one ending within the hour), four upcoming, a draft, four finished (sold, reserve not met,
+no bids) and one cancelled. The bids and results are produced by the real bid engine and closing job, so the
+bid history and audit log are genuine. The photos are public domain or CC0
+([credits](backend/database/seeders/photos/CREDITS.md)). Reset the demo data at any time with
 `docker compose exec backend php artisan migrate:fresh --seed`.
 
 ### Try it in two minutes
 
-The live demo auctions stay open for a few days after seeding; if they have ended, reset the demo data first.
+Most live demo auctions stay open for a day or two after seeding; if they have ended, reset the demo data first.
 
 1. Open http://localhost:5173 in two browsers (or one normal and one private window). Log in as `bidder1@auction.test`
    in one and `bidder2@auction.test` in the other.

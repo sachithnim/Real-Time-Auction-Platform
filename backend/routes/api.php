@@ -2,11 +2,14 @@
 
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\AuctionHistoryController;
+use App\Http\Controllers\Admin\AuctionImageController;
 use App\Http\Controllers\Admin\BidFlagController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MonitorController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
+use App\Http\Controllers\AuctionImageFileController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
@@ -35,6 +38,9 @@ Route::get('categories', [CategoryController::class, 'index']);
 Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
 Route::get('auctions/{auction}/bids', [BidController::class, 'index']);
+Route::get('auction-images/{filename}', [AuctionImageFileController::class, 'show'])
+    ->where('filename', '[A-Za-z0-9]{40}\.(jpg|png|webp)')
+    ->name('auction-images.show');
 
 // Bidding: bidders only (admins cannot bid), rate limited, scanned for suspicious
 // patterns after the response is sent, safe to retry.
@@ -62,8 +68,13 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::put('auctions/{auction}', [AdminAuctionController::class, 'update']);
     Route::post('auctions/{auction}/schedule', [AdminAuctionController::class, 'schedule']);
     Route::post('auctions/{auction}/cancel', [AdminAuctionController::class, 'cancel']);
+    Route::post('auctions/{auction}/images', [AuctionImageController::class, 'store']);
+    Route::put('auctions/{auction}/images/order', [AuctionImageController::class, 'reorder']);
+    // scopeBindings: the photo must belong to the auction in the URL.
+    Route::delete('auctions/{auction}/images/{image}', [AuctionImageController::class, 'destroy'])->scopeBindings();
     Route::get('auctions/{auction}/bids', [AuctionHistoryController::class, 'bids']);
     Route::get('auctions/{auction}/events', [AuctionHistoryController::class, 'events']);
+    Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('statistics', [StatisticsController::class, 'index']);
     Route::get('monitor', [MonitorController::class, 'index']);
     Route::get('categories', [AdminCategoryController::class, 'index']);
