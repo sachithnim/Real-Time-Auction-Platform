@@ -45,10 +45,20 @@ export interface Category {
 
 export type CategorySummary = Pick<Category, 'id' | 'name' | 'slug'>
 
+/** An item photo. The url can be cached forever: a filename is never reused. */
+export interface AuctionImage {
+  id: number
+  url: string
+  width: number
+  height: number
+}
+
 export interface Auction {
   id: number
   title: string
   description: string
+  /** In display order; the first is the cover. */
+  images: AuctionImage[]
   category: CategorySummary | null
   status: AuctionStatus
   result: AuctionResult | null
@@ -85,6 +95,7 @@ export interface AdminAuction {
   id: number
   title: string
   description: string
+  images: AuctionImage[]
   category_id: number | null
   category: CategorySummary | null
   /** Present on the single-auction admin view once the auction is sold. */

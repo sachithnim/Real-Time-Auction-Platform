@@ -3,7 +3,7 @@ import type { Auction } from '../../../types/api'
 import { applyAuctionEvent } from '../auctionEvents'
 
 const base: Auction = {
-  id: 7, title: 'Tea chest', description: '', status: 'LIVE', result: null,
+  id: 7, title: 'Tea chest', description: '', images: [], status: 'LIVE', result: null,
   starting_price: 10_000, current_price: 10_000, final_price: null, min_increment: 500, min_next_bid: 10_500,
   leader: 'Bidder 1', is_leading: false, my_pseudonym: 'Bidder 2', winner: null, is_winner: false, reserve_met: true, is_watching: false, category: null,
   bids_count: 1, start_at: '2030-01-01T10:00:00Z', end_at: '2030-01-01T12:00:00Z', original_end_at: '2030-01-01T12:00:00Z',

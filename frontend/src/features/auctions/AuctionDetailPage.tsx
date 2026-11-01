@@ -23,6 +23,7 @@ import { BiddingPanel } from './BiddingPanel'
 import { BidHistory } from './BidHistory'
 import { CheckoutPanel } from './CheckoutPanel'
 import { leaderBadge } from './leaderBadge'
+import { PhotoGallery } from './PhotoGallery'
 import { priceLabel } from './priceLabel'
 import { reserveBadge } from './statusText'
 import { WatchButton } from './WatchButton'
@@ -78,6 +79,7 @@ export function AuctionDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          <PhotoGallery images={a.images ?? []} title={a.title} />
           <Card>
             <p className="whitespace-pre-line text-slate-700">{a.description}</p>
           </Card>
