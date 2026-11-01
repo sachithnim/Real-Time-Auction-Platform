@@ -39,6 +39,15 @@ enum AuctionStatus: string
         return $this === self::Draft;
     }
 
+    /**
+     * Photos may change until bidding starts. Once live, bidders rely on what they
+     * saw, so the item's pictures are locked like its terms.
+     */
+    public function photosEditable(): bool
+    {
+        return $this === self::Draft || $this === self::Scheduled;
+    }
+
     public function isFinal(): bool
     {
         return $this->allowedTransitions() === [];

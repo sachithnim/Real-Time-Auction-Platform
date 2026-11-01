@@ -9,6 +9,7 @@ enum AuctionEventType: string
 {
     case AuctionCreated = 'AUCTION_CREATED';
     case AuctionUpdated = 'AUCTION_UPDATED';
+    case PhotosChanged = 'PHOTOS_CHANGED';
     case AuctionScheduled = 'AUCTION_SCHEDULED';
     case AuctionStarted = 'AUCTION_STARTED';
     case BidPlaced = 'BID_PLACED';

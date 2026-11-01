@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Http\Resources\AuctionImageResource;
 use App\Http\Resources\PaymentResource;
 use App\Models\Auction;
 use App\Support\ServerTime;
@@ -25,6 +26,7 @@ class AdminAuctionResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'images' => AuctionImageResource::collection($this->images),
             'category_id' => $this->category_id,
             'category' => $this->category === null ? null : [
                 'id' => $this->category->id, 'name' => $this->category->name, 'slug' => $this->category->slug,
