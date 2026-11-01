@@ -26,7 +26,7 @@ export async function fetchAuctions({ status: filter, category, search, sort, pa
       search: search.trim() || undefined,
       sort: sort === 'default' ? undefined : sort,
       page,
-      per_page: 9, // a full 3 × 3 grid on wide screens
+      per_page: 6, // two full rows of three on wide screens
     },
   })
   return data
