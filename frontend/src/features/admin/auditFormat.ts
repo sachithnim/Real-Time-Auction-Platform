@@ -17,6 +17,7 @@ export interface AuditView {
 const titles: Record<string, string> = {
   AUCTION_CREATED: 'Auction created',
   AUCTION_UPDATED: 'Auction edited',
+  PHOTOS_CHANGED: 'Photos changed',
   AUCTION_SCHEDULED: 'Auction scheduled',
   AUCTION_STARTED: 'Auction started',
   BID_PLACED: 'Bid placed',
@@ -163,6 +164,19 @@ export function describeEvent(event: AuctionEvent, users: AuditUsers = {}): Audi
           value: `${fieldValue(field, changes[field]?.from)} → ${fieldValue(field, changes[field]?.to)}`,
         })),
       )
+    }
+
+    case 'PHOTOS_CHANGED': {
+      const photos = (n: unknown) => `${Number(n)} ${Number(n) === 1 ? 'photo' : 'photos'}`
+      const ids = Array.isArray(p.image_ids) ? p.image_ids.length : 0
+      if (p.action === 'reordered') {
+        return view(p.cover_changed ? 'Reordered the photos and chose a new cover.' : 'Reordered the photos.', 'neutral')
+      }
+      const summary =
+        p.action === 'removed'
+          ? `Removed ${p.was_cover ? 'the cover photo' : 'a photo'}.`
+          : `Added ${photos(ids)}.`
+      return view(summary, 'neutral', [{ label: 'Photos', value: `${p.count_before} → ${p.count_after}` }])
     }
 
     case 'AUCTION_SCHEDULED':
