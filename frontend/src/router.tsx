@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router'
 import { Layout } from './components/Layout'
+import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
 import { AdminAuctionDetailPage } from './features/admin/AdminAuctionDetailPage'
 import { AdminAuctionFormPage } from './features/admin/AdminAuctionFormPage'
 import { AdminAuctionsPage } from './features/admin/AdminAuctionsPage'
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <AuctionListPage /> },
       { path: '/auctions/:id', element: <AuctionDetailPage /> },
+      { path: '/admin', element: <RequireAuth role="ADMIN"><AdminDashboardPage /></RequireAuth> },
       { path: '/admin/auctions', element: <RequireAuth role="ADMIN"><AdminAuctionsPage /></RequireAuth> },
       { path: '/admin/auctions/new', element: <RequireAuth role="ADMIN"><AdminAuctionFormPage /></RequireAuth> },
       { path: '/admin/auctions/:id', element: <RequireAuth role="ADMIN"><AdminAuctionDetailPage /></RequireAuth> },

@@ -19,6 +19,7 @@ interface NavItem {
 }
 
 const adminLinks: NavItem[] = [
+  { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/auctions', label: 'Manage auctions' },
   { to: '/admin/monitor', label: 'Live monitor' },
   { to: '/admin/categories', label: 'Categories' },
