@@ -120,7 +120,7 @@ class DemoAuctionSeeder extends Seeder
         $this->bid($brooch, 2, '-6 hours', 5_000);
 
         $ball = $this->auction('Sports memorabilia', 'Match-Used Test Cricket Ball', 'cricket-ball', 1,
-            "Red leather Test match ball, used in a home series at the R. Premadasa Stadium. Mounted on a stand with a letter of provenance from the groundsman.",
+            'Red leather Test match ball, used in a home series at the R. Premadasa Stadium. Mounted on a stand with a letter of provenance from the groundsman.',
             ['starting_price' => 12_000, 'reserve_price' => 20_000, 'min_increment' => 500], start: '-10 hours', end: '+1 day');
         $this->bid($ball, 5, '-9 hours');
         $this->bid($ball, 3, '-2 hours', 1_500);
@@ -148,14 +148,14 @@ class DemoAuctionSeeder extends Seeder
 
         // A draft: details still being finalised, not visible to bidders.
         $this->auction('Home & furniture', 'Chippendale-Style Mahogany Armchair', 'mahogany-armchair', 1,
-            "Carved mahogany armchair with pierced splat, scrolled arms and ball-and-claw feet. Reupholstery recommended.",
+            'Carved mahogany armchair with pierced splat, scrolled arms and ball-and-claw feet. Reupholstery recommended.',
             ['starting_price' => 70_000, 'reserve_price' => 95_000, 'min_increment' => 1_000], start: '+8 days', end: '+10 days');
     }
 
     private function finished(): void
     {
         $pocket = $this->auction('Jewellery & watches', 'Gold Pocket Watch with Albert Chain', 'gold-pocket-watch', 2,
-            "Open-face pocket watch with white enamel dial and Roman numerals, in a gold-plated case, with matching curb-link Albert chain. Running and keeping time.",
+            'Open-face pocket watch with white enamel dial and Roman numerals, in a gold-plated case, with matching curb-link Albert chain. Running and keeping time.',
             ['starting_price' => 40_000, 'reserve_price' => 55_000, 'min_increment' => 500], start: '-6 days', end: '-4 days');
         $this->bid($pocket, 1, '-5 days -20 hours');
         $this->bid($pocket, 3, '-5 days -2 hours', 4_000);
@@ -166,26 +166,26 @@ class DemoAuctionSeeder extends Seeder
         $this->close($pocket);
 
         $coffer = $this->auction('Antiques', 'Carved Oak Coffer', 'oak-coffer', 1,
-            "Large oak coffer with carved figurative panels and an iron lock plate, in the 16th-century Flemish style. Lid hinges replaced; interior clean.",
+            'Large oak coffer with carved figurative panels and an iron lock plate, in the 16th-century Flemish style. Lid hinges replaced; interior clean.',
             ['starting_price' => 150_000, 'reserve_price' => 155_000, 'min_increment' => 2_500], start: '-9 days', end: '-7 days');
         $this->bid($coffer, 2, '-8 days -12 hours');
         $this->bid($coffer, 5, '-7 days -6 hours', 5_000);
         $this->close($coffer);
 
         $typewriter = $this->auction('Collectibles', 'Underwood Standard Typewriter', 'underwood-typewriter', 1,
-            "Black Underwood desk typewriter from the 1930s with glass-topped keys. Types cleanly; new ribbon fitted.",
+            'Black Underwood desk typewriter from the 1930s with glass-topped keys. Types cleanly; new ribbon fitted.',
             ['starting_price' => 20_000, 'reserve_price' => 40_000, 'min_increment' => 500], start: '-5 days', end: '-3 days');
         $this->bid($typewriter, 4, '-4 days -18 hours');
         $this->bid($typewriter, 2, '-3 days -5 hours', 2_000);
         $this->close($typewriter);
 
         $desk = $this->auction('Home & furniture', 'Victorian Carved Writing Desk', 'writing-desk', 1,
-            "Walnut davenport-style writing desk with a fall front, pigeonholes and carved panels. Leather writing surface worn.",
+            'Walnut davenport-style writing desk with a fall front, pigeonholes and carved panels. Leather writing surface worn.',
             ['starting_price' => 110_000, 'reserve_price' => 140_000, 'min_increment' => 2_500], start: '-4 days', end: '-2 days');
         $this->close($desk);
 
         $lamp = $this->auction('Antiques', 'Brass Temple Oil Lamp', 'temple-oil-lamp', 1,
-            "Cast brass oil lamp with a pierced back plate of peacocks and foliage, from a South Asian temple. Five wick spouts.",
+            'Cast brass oil lamp with a pierced back plate of peacocks and foliage, from a South Asian temple. Five wick spouts.',
             ['starting_price' => 9_000, 'reserve_price' => null, 'min_increment' => 100], start: '+1 day', end: '+3 days', scheduled: true);
         $this->at('-2 hours', fn () => $this->lifecycle->cancel($lamp, $this->admin, 'The consignor withdrew the item.'));
     }
