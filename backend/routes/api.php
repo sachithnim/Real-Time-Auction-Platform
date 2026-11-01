@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuctionHistoryController;
 use App\Http\Controllers\Admin\AuctionImageController;
 use App\Http\Controllers\Admin\BidFlagController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MonitorController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
@@ -73,6 +74,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::delete('auctions/{auction}/images/{image}', [AuctionImageController::class, 'destroy'])->scopeBindings();
     Route::get('auctions/{auction}/bids', [AuctionHistoryController::class, 'bids']);
     Route::get('auctions/{auction}/events', [AuctionHistoryController::class, 'events']);
+    Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('statistics', [StatisticsController::class, 'index']);
     Route::get('monitor', [MonitorController::class, 'index']);
     Route::get('categories', [AdminCategoryController::class, 'index']);
