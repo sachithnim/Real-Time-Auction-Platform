@@ -12,4 +12,6 @@
 # Dependencies and build output
 node_modules/
 vendor/
+# Laravel keeps its mail template overrides in a folder named vendor
+!backend/resources/views/vendor/
 dist/
