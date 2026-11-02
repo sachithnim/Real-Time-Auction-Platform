@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EmailType;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,6 +41,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'email_preferences' => 'array',
         ];
     }
 
@@ -80,6 +82,29 @@ class User extends Authenticatable
     public static function fullName(string $firstName, string $lastName): string
     {
         return trim($firstName.' '.$lastName);
+    }
+
+    /** Every email is on until the user switches it off. */
+    public function wantsEmail(EmailType $type): bool
+    {
+        return ($this->email_preferences[$type->value] ?? true) === true;
+    }
+
+    /**
+     * Every email type with its on/off state.
+     *
+     * @return array<string, bool>
+     */
+    public function emailPreferences(): array
+    {
+        return collect(EmailType::cases())->mapWithKeys(fn (EmailType $type) => [$type->value => $this->wantsEmail($type)])->all();
+    }
+
+    /** @param  array<string, bool>  $changes  Only the types being changed. */
+    public function updateEmailPreferences(array $changes): void
+    {
+        $this->email_preferences = [...$this->emailPreferences(), ...$changes];
+        $this->save();
     }
 
     public function isAdmin(): bool
