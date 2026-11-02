@@ -4,6 +4,7 @@
 #   API       http://localhost:8000
 #   Reverb    ws://localhost:8080 (WebSockets)
 #   MySQL     127.0.0.1:3307 (for database GUI tools; user auction / secret)
+#   Mailpit   http://localhost:8025 (every email the app sends lands here; none leave your machine)
 #   queue + scheduler run auction start/close jobs, broadcasts and sweeps in the background
 #
 # Everything a fresh clone needs is set here, so no .env file has to be created
@@ -19,8 +20,13 @@ x-backend-env: &backend-env
   REDIS_HOST: redis
   QUEUE_CONNECTION: redis
   CACHE_STORE: redis
-  # The app sends no email; anything Laravel would mail is written to the log instead.
-  MAIL_MAILER: log
+  # Notification emails go to the local Mailpit inbox (http://localhost:8025), never to real
+  # addresses. In production, point these at a real SMTP provider instead.
+  MAIL_MAILER: smtp
+  MAIL_HOST: mailpit
+  MAIL_PORT: 1025
+  MAIL_FROM_ADDRESS: no-reply@livebid.test
+  MAIL_FROM_NAME: LiveBid
   FRONTEND_URL: http://localhost:5173
   SANCTUM_STATEFUL_DOMAINS: localhost:5173,localhost
   SESSION_DOMAIN: localhost
@@ -62,6 +68,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  # Catches outgoing email for development: read it at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # web inbox
+      - "1025:1025"   # SMTP, for running the backend natively (php artisan serve)
 
   redis:
     image: redis:7-alpine
