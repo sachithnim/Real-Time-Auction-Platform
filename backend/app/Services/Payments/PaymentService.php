@@ -6,11 +6,13 @@ use App\Enums\AuctionEventType;
 use App\Enums\AuctionResult;
 use App\Enums\ErrorCode;
 use App\Enums\PaymentStatus;
+use App\Events\User\PaymentReceived;
 use App\Exceptions\ApiException;
 use App\Models\Auction;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\AuctionEventRecorder;
+use App\Support\ServerTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -108,6 +110,19 @@ class PaymentService
                     'attempt' => $payment->attempts,
                 ], fn ($value) => $value !== null),
             );
+
+            if ($result['approved']) {
+                // Sent once the payment is committed: the receipt email and the live notice.
+                PaymentReceived::dispatch($user->id, ServerTime::now(), [
+                    'auction_id' => $auction->id,
+                    'title' => $auction->title,
+                    'amount' => $payment->amount,
+                    'reference' => $payment->reference,
+                    'card_brand' => $payment->card_brand,
+                    'card_last4' => $payment->card_last4,
+                    'paid_at' => ServerTime::format($payment->paid_at),
+                ]);
+            }
 
             return $payment;
         });
