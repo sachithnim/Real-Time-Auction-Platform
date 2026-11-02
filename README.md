@@ -64,8 +64,15 @@ setting the containers need. The first start takes a little longer while Compose
 | MySQL    | `127.0.0.1:3307`                  | `auction` / `secret`, for database GUI tools       |
 | Redis    | internal only                     | Used by the backend container                      |
 | Reverb   | ws://localhost:8080               | WebSocket server (Laravel Reverb)                  |
-| Queue    | (background)                      | `queue:work`: start/close jobs and broadcasts      |
+| Queue    | (background)                      | `queue:work`: start/close jobs, broadcasts, emails |
 | Scheduler| (background)                      | `schedule:work`: start/close safety sweeps         |
+| Mailpit  | http://localhost:8025             | Inbox for every email the app sends (none leave your machine) |
+
+**Email notifications.** Bidders get emails when they are outbid (at most one per auction every 10 minutes),
+when their automatic maximum is passed, when they win, before a watched auction starts or ends, and a
+receipt after paying. Each can be switched off on the **Email settings** page (account menu) or with the
+unsubscribe link in the email. Locally they all arrive in Mailpit; in production, point the `MAIL_*`
+settings at a real SMTP provider (e.g. Amazon SES, Postmark, Resend).
 
 On start, the backend container installs Composer dependencies if missing, creates `.env` from
 `.env.example` on a fresh clone, runs migrations and the (idempotent) seeders. Source folders are
