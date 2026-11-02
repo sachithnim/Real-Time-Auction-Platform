@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\ScanBiddingActivity;
@@ -31,6 +32,12 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
     });
+});
+
+// Unsubscribe links in emails: no login, but the URL must carry a valid signature.
+Route::middleware(['signed', 'throttle:30,1'])->group(function () {
+    Route::get('email/unsubscribe/{user}/{type}', [EmailPreferenceController::class, 'unsubscribe'])->name('email.unsubscribe');
+    Route::post('email/unsubscribe/{user}/{type}', [EmailPreferenceController::class, 'unsubscribeOneClick']);
 });
 
 // Public: guests and bidders can browse auctions.
@@ -55,6 +62,8 @@ Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent']
 });
 
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
+    Route::get('me/email-preferences', [EmailPreferenceController::class, 'show']);
+    Route::put('me/email-preferences', [EmailPreferenceController::class, 'update']);
     Route::get('auctions/{auction}/auto-bid', [AutoBidController::class, 'show']);
     Route::get('auctions/{auction}/payment', [PaymentController::class, 'show']);
     Route::put('auctions/{auction}/watch', [WatchlistController::class, 'store']);

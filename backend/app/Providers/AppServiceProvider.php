@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Listeners\SendNotificationEmail;
 use App\Models\BidIncrementRule;
 use App\Services\Bidding\BidderPseudonyms;
 use App\Services\Bidding\IncrementCalculator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+
+        // Each user notification also goes out as an email (when the user wants it).
+        Event::listen(array_keys(SendNotificationEmail::EMAILS), SendNotificationEmail::class);
     }
 
     private function configureRateLimiting(): void

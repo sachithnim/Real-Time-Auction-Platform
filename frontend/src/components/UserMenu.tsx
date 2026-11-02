@@ -46,6 +46,14 @@ export function UserMenu({ user, onLogout }: { user: User; onLogout: () => void 
               My watchlist
             </Link>
           )}
+          {user.role === 'BIDDER' && (
+            <Link to="/account/emails" role="menuitem" className={itemClass} onClick={() => close()}>
+              <svg viewBox="0 0 24 24" className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 6h16v12H4zM4 7l8 6 8-6" />
+              </svg>
+              Email settings
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"
