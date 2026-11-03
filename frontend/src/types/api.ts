@@ -265,3 +265,29 @@ export interface AutoBidResponse {
   data: { auto_bid: AutoBid; auction: Auction }
   meta: Meta
 }
+
+/** How the signed-in bidder stands in an auction they bid on. */
+export type MyBidState = 'LEADING' | 'OUTBID' | 'WON' | 'LOST' | 'CANCELLED'
+
+/** An auction on the "My bids" page: the public auction plus the viewer's own part in it. */
+export interface MyBidAuction extends Auction {
+  my_bid: {
+    state: MyBidState
+    highest_bid: number
+    bids_count: number
+    /** The viewer's own private maximum, if they set one. */
+    max_amount: number | null
+    max_active: boolean
+    /** Only on a win. */
+    payment_status: PaymentStatus | null
+  }
+}
+
+export interface MyBidCounts {
+  all: number
+  active: number
+  won: number
+  lost: number
+  /** Wins not paid yet. */
+  to_pay: number
+}

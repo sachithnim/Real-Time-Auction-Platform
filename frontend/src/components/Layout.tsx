@@ -27,6 +27,8 @@ const adminLinks: NavItem[] = [
   { to: '/admin/statistics', label: 'Statistics' },
 ]
 
+const bidderLinks: NavItem[] = [{ to: '/account/bids', label: 'My bids' }]
+
 export function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -43,7 +45,11 @@ export function Layout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [menuOpen])
 
-  const links: NavItem[] = [{ to: '/', label: 'Auctions', end: true }, ...(user?.role === 'ADMIN' ? adminLinks : [])]
+  const links: NavItem[] = [
+    { to: '/', label: 'Auctions', end: true },
+    ...(user?.role === 'ADMIN' ? adminLinks : []),
+    ...(user?.role === 'BIDDER' ? bidderLinks : []),
+  ]
   const closeMenu = () => setMenuOpen(false)
 
   const onLogout = async () => {
