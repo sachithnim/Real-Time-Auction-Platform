@@ -163,15 +163,20 @@ function LivePrice({ amount }: { amount: number }) {
   )
 }
 
-/** Back to the auction list, with the filters it had (they live in the URL, passed along by the card link). */
+/**
+ * Back to where the bidder came from, with the filters it had (they live in the URL,
+ * passed along by the link): the auction list, or "My bids" when opened from there.
+ */
 function BackToList() {
-  const from = (useLocation().state as { listSearch?: string } | null)?.listSearch ?? ''
+  const state = useLocation().state as { listSearch?: string; fromMyBids?: string } | null
+  const to = state?.fromMyBids !== undefined ? `/account/bids${state.fromMyBids}` : `/${state?.listSearch ?? ''}`
+  const label = state?.fromMyBids !== undefined ? 'Back to my bids' : 'Back to all auctions'
 
   return (
     <Link
-      to={`/${from}`}
-      aria-label="Back to all auctions"
-      title="Back to all auctions"
+      to={to}
+      aria-label={label}
+      title={label}
       className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100 hover:text-slate-900"
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
