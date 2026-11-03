@@ -39,6 +39,14 @@ export function UserMenu({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
           <div className="my-1 h-px bg-slate-100" />
           {user.role === 'BIDDER' && (
+            <Link to="/account/bids" role="menuitem" className={itemClass} onClick={() => close()}>
+              <svg viewBox="0 0 24 24" className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M14 4l6 6M11 7l6 6M12.5 5.5l-6 6M4 20l6-6M8.5 9.5l6 6" />
+              </svg>
+              My bids
+            </Link>
+          )}
+          {user.role === 'BIDDER' && (
             <Link to="/?status=watching" role="menuitem" className={itemClass} onClick={() => close()}>
               <svg viewBox="0 0 24 24" className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" aria-hidden>
                 <path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" />
