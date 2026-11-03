@@ -1,0 +1,40 @@
+import type { MyBidAuction } from '../../../types/api'
+
+/** A live auction the bidder leads, with every field filled; override what a test needs. */
+export function myBidAuction(overrides: Partial<MyBidAuction> = {}, myBid: Partial<MyBidAuction['my_bid']> = {}): MyBidAuction {
+  return {
+    id: 7,
+    title: 'Brass Ship Telescope',
+    description: 'A 19th-century brass telescope.',
+    images: [],
+    category: { id: 1, name: 'Antiques', slug: 'antiques' },
+    status: 'LIVE',
+    result: null,
+    starting_price: 10_000,
+    current_price: 15_500,
+    final_price: null,
+    min_increment: 500,
+    min_next_bid: 16_000,
+    leader: 'You',
+    is_leading: true,
+    my_pseudonym: 'You',
+    winner: null,
+    is_winner: false,
+    reserve_met: true,
+    is_watching: false,
+    bids_count: 4,
+    start_at: '2026-11-01T10:00:00Z',
+    end_at: '2099-01-01T00:00:00Z',
+    original_end_at: '2099-01-01T00:00:00Z',
+    anti_snipe_seconds: 120,
+    extension_seconds: 120,
+    max_extensions: 3,
+    extensions_count: 0,
+    started_at: '2026-11-01T10:00:00Z',
+    ended_at: null,
+    cancelled_at: null,
+    sequence: 4,
+    ...overrides,
+    my_bid: { state: 'LEADING', highest_bid: 15_500, bids_count: 2, max_amount: null, max_active: false, payment_status: null, ...myBid },
+  }
+}

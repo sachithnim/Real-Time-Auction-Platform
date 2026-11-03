@@ -42,6 +42,7 @@ export function useUserNotifications(userId: number | null) {
       queryClient.invalidateQueries({ queryKey: auctionKeys.autoBid(auctionId) })
       // The list cards show "You're leading" / "Outbid" too.
       queryClient.invalidateQueries({ queryKey: ['auctions', 'list'] })
+      queryClient.invalidateQueries({ queryKey: ['auctions', 'mine'] })
     }
     // Offered unless the bidder is already looking at that auction.
     const viewAuction = (auctionId: number) =>
