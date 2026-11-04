@@ -213,6 +213,16 @@ ever stored in browser JavaScript. The browser first calls `GET /sanctum/csrf-co
 `POST /api/auth/login` or `POST /api/auth/register`. CORS allows credentialed requests only from
 `FRONTEND_URL`. Self-registration always creates a bidder account; the admin account is seeded.
 
+**Account settings and password reset.** Any signed-in user can change their name, email and password
+on **Account settings** (`PUT /api/me/profile`, `PUT /api/me/password`). Changing the email or the
+password asks for the current password. A new password signs out every other device (a new remember
+token, and the user's other stored sessions are deleted), and the owner gets an email about it; an
+email change is reported to the old address. **Forgot password?** on the login page
+(`POST /api/auth/forgot-password`) emails a single-use link that expires after 60 minutes and opens
+the web app's reset page (`POST /api/auth/reset-password`). The answer is the same whether or not the
+email has an account, so the form cannot be used to find out who is registered; both endpoints share
+the login rate limit.
+
 ## Frontend
 
 React 19, TypeScript and Vite, with React Router, TanStack Query, axios, react-hook-form with zod, laravel-echo with
