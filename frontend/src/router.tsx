@@ -14,8 +14,10 @@ import { UnsubscribedPage } from './features/account/UnsubscribedPage'
 import { RequireAuth } from './features/auth/guards'
 import { AuctionDetailPage } from './features/auctions/AuctionDetailPage'
 import { AuctionListPage } from './features/auctions/AuctionListPage'
+import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
+import { ResetPasswordPage } from './features/auth/ResetPasswordPage'
 import { NotFoundPage } from './components/NotFoundPage'
 import { RouteError } from './components/RouteError'
 
@@ -44,4 +46,6 @@ export const router = createBrowserRouter([
   // Full-screen pages with their own frame (AuthLayout), outside the main header.
   { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
   { path: '/register', element: <RegisterPage />, errorElement: <RouteError /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage />, errorElement: <RouteError /> },
+  { path: '/reset-password', element: <ResetPasswordPage />, errorElement: <RouteError /> },
 ])

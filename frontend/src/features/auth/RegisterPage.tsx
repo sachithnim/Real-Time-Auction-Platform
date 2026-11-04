@@ -6,9 +6,10 @@ import { z } from 'zod'
 import { Alert, Button, Field } from '../../components/ui'
 import { useDocumentTitle } from '../../components/useDocumentTitle'
 import { fieldErrors, friendlyMessage, parseApiError } from '../../lib/apiError'
-import { passwordStrength, strengthLabels, type Strength } from '../../lib/passwordStrength'
+import { passwordStrength } from '../../lib/passwordStrength'
 import { AuthLayout } from './AuthLayout'
 import { PasswordField } from './PasswordField'
+import { StrengthMeter } from './StrengthMeter'
 import { useAuth } from './useAuth'
 
 const schema = z
@@ -93,20 +94,5 @@ export function RegisterPage() {
         </Button>
       </form>
     </AuthLayout>
-  )
-}
-
-const barColours: Record<Strength, string> = { 0: 'bg-red-400', 1: 'bg-red-400', 2: 'bg-amber-400', 3: 'bg-emerald-400', 4: 'bg-emerald-600' }
-
-function StrengthMeter({ strength }: { strength: Strength }) {
-  return (
-    <div className="flex items-center gap-3" aria-live="polite">
-      <div className="flex flex-1 gap-1" aria-hidden>
-        {[1, 2, 3, 4].map((step) => (
-          <span key={step} className={`h-1.5 flex-1 rounded-full ${step <= Math.max(strength, 1) ? barColours[strength] : 'bg-slate-200'}`} />
-        ))}
-      </div>
-      <span className="w-16 text-right text-xs text-slate-600">{strengthLabels[strength]}</span>
-    </div>
   )
 }

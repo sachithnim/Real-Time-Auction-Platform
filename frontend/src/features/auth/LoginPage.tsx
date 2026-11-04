@@ -23,17 +23,19 @@ export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  // After a password reset: say so, and fill in the email it was for.
+  const arrived = location.state as { from?: string; notice?: string; email?: string } | null
   const [error, setError] = useState<string | null>(null)
   const { register, handleSubmit, formState, setError: setFieldError } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '', remember: false },
+    defaultValues: { email: arrived?.email ?? '', password: '', remember: false },
   })
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null)
     try {
       const user = await login(values)
-      const from = (location.state as { from?: string } | null)?.from
+      const from = arrived?.from
       navigate(from ?? (user.role === 'ADMIN' ? '/admin' : '/'), { replace: true })
     } catch (e) {
       const info = parseApiError(e)
@@ -60,9 +62,17 @@ export function LoginPage() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        {arrived?.notice && !error && <Alert tone="success">{arrived.notice}</Alert>}
         {error && <Alert>{error}</Alert>}
         <Field label="Email" type="email" autoComplete="email" placeholder="you@example.com" {...register('email')} error={formState.errors.email?.message} />
-        <PasswordField label="Password" autoComplete="current-password" {...register('password')} error={formState.errors.password?.message} />
+        <div className="space-y-1.5">
+          <PasswordField label="Password" autoComplete="current-password" {...register('password')} error={formState.errors.password?.message} />
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm font-medium text-indigo-600 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+        </div>
         <label className="flex cursor-pointer items-start gap-2.5 text-sm text-slate-700 select-none">
           <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-indigo-600" {...register('remember')} />
           <span>
