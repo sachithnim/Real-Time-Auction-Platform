@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\AuctionHistoryController;
 use App\Http\Controllers\Admin\AuctionImageController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AuctionImageFileController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\CategoryController;
@@ -27,6 +29,12 @@ Route::prefix('auth')->group(function () {
     Route::middleware(['throttle:auth', 'session.required'])->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login', [AuthController::class, 'login']);
+    });
+
+    // Forgot password: rate limited per email and per client like logging in.
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('forgot-password', [PasswordResetController::class, 'forgot']);
+        Route::post('reset-password', [PasswordResetController::class, 'reset']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -60,6 +68,12 @@ Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', ScanBiddingAc
 // Paying for a won auction: winner only (checked in PaymentService), safe to retry.
 Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
     Route::post('auctions/{auction}/payment', [PaymentController::class, 'store']);
+});
+
+// Every signed-in user's own account. Password checks are slowed per user.
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
+    Route::put('me/profile', [AccountController::class, 'updateProfile']);
+    Route::put('me/password', [AccountController::class, 'updatePassword']);
 });
 
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
