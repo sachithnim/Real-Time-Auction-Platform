@@ -8,6 +8,7 @@ import { AdminCategoriesPage } from './features/admin/AdminCategoriesPage'
 import { AdminFlagsPage } from './features/admin/AdminFlagsPage'
 import { AdminMonitorPage } from './features/admin/AdminMonitorPage'
 import { AdminStatisticsPage } from './features/admin/AdminStatisticsPage'
+import { AccountPage } from './features/account/AccountPage'
 import { EmailSettingsPage } from './features/account/EmailSettingsPage'
 import { MyBidsPage } from './features/account/MyBidsPage'
 import { UnsubscribedPage } from './features/account/UnsubscribedPage'
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { path: '/admin/monitor', element: <RequireAuth role="ADMIN"><AdminMonitorPage /></RequireAuth> },
       { path: '/admin/flags', element: <RequireAuth role="ADMIN"><AdminFlagsPage /></RequireAuth> },
       { path: '/admin/categories', element: <RequireAuth role="ADMIN"><AdminCategoriesPage /></RequireAuth> },
+      { path: '/account', element: <RequireAuth><AccountPage /></RequireAuth> },
       { path: '/account/bids', element: <RequireAuth role="BIDDER"><MyBidsPage /></RequireAuth> },
       { path: '/account/emails', element: <RequireAuth role="BIDDER"><EmailSettingsPage /></RequireAuth> },
       { path: '/unsubscribed', element: <UnsubscribedPage /> },

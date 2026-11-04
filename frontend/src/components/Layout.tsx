@@ -141,10 +141,10 @@ function Account({ user, onLogout, onNavigate }: { user: User | null; onLogout: 
 
   return (
     <>
-      <span className="flex items-center gap-2 text-slate-600">
+      <Link to="/account" className="flex items-center gap-2 text-slate-600 hover:text-slate-900" onClick={onNavigate} aria-label={`Account settings: ${user.name}`}>
         <Avatar user={user} />
         {user.name} <span className="text-xs text-slate-500">({user.role.toLowerCase()})</span>
-      </span>
+      </Link>
       <button type="button" className="font-medium text-slate-600 hover:text-slate-900" onClick={onLogout}>
         Log out
       </button>
