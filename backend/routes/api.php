@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\AuctionHistoryController;
 use App\Http\Controllers\Admin\AuctionImageController;
@@ -67,6 +68,12 @@ Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', ScanBiddingAc
 // Paying for a won auction: winner only (checked in PaymentService), safe to retry.
 Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
     Route::post('auctions/{auction}/payment', [PaymentController::class, 'store']);
+});
+
+// Every signed-in user's own account. Password checks are slowed per user.
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
+    Route::put('me/profile', [AccountController::class, 'updateProfile']);
+    Route::put('me/password', [AccountController::class, 'updatePassword']);
 });
 
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
