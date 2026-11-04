@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EmailType;
 use App\Enums\UserRole;
+use App\Notifications\ResetPasswordEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 // 'role' is deliberately not fillable: a request can never promote itself to admin.
 #[Fillable(['first_name', 'last_name', 'name', 'email', 'password'])]
@@ -105,6 +107,30 @@ class User extends Authenticatable
     {
         $this->email_preferences = [...$this->emailPreferences(), ...$changes];
         $this->save();
+    }
+
+    /** The "Forgot password?" email: branded, queued, and linking to the web app. */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordEmail($token));
+    }
+
+    /**
+     * Signs the user out everywhere except the given session (none: everywhere).
+     * A new remember token voids "remember me" cookies on other devices; deleting
+     * the stored sessions ends the ones still open.
+     */
+    public function signOutOtherSessions(?string $keepSessionId = null): void
+    {
+        $this->setRememberToken(Str::random(60));
+        $this->save();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $this->id)
+                ->when($keepSessionId, fn ($sessions, $id) => $sessions->where('id', '!=', $id))
+                ->delete();
+        }
     }
 
     public function isAdmin(): bool

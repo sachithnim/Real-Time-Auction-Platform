@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AuctionImageFileController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\CategoryController;
@@ -27,6 +28,12 @@ Route::prefix('auth')->group(function () {
     Route::middleware(['throttle:auth', 'session.required'])->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login', [AuthController::class, 'login']);
+    });
+
+    // Forgot password: rate limited per email and per client like logging in.
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('forgot-password', [PasswordResetController::class, 'forgot']);
+        Route::post('reset-password', [PasswordResetController::class, 'reset']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {
