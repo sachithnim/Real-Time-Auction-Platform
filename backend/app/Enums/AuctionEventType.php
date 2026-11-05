@@ -17,6 +17,7 @@ enum AuctionEventType: string
     case AutoBidPlaced = 'AUTO_BID_PLACED';
     case AutoBidConfigured = 'AUTO_BID_CONFIGURED';
     case AutoBidMaxReached = 'AUTO_BID_MAX_REACHED';
+    case AutoBidCancelled = 'AUTO_BID_CANCELLED';
     case LeaderChanged = 'LEADER_CHANGED';
     case AuctionExtended = 'AUCTION_EXTENDED';
     case AuctionEnded = 'AUCTION_ENDED';

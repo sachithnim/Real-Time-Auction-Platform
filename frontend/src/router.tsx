@@ -4,9 +4,11 @@ import { AdminDashboardPage } from './features/admin/AdminDashboardPage'
 import { AdminAuctionDetailPage } from './features/admin/AdminAuctionDetailPage'
 import { AdminAuctionFormPage } from './features/admin/AdminAuctionFormPage'
 import { AdminAuctionsPage } from './features/admin/AdminAuctionsPage'
+import { AdminBiddersPage } from './features/admin/AdminBiddersPage'
 import { AdminCategoriesPage } from './features/admin/AdminCategoriesPage'
 import { AdminFlagsPage } from './features/admin/AdminFlagsPage'
 import { AdminMonitorPage } from './features/admin/AdminMonitorPage'
+import { AdminPaymentsPage } from './features/admin/AdminPaymentsPage'
 import { AdminStatisticsPage } from './features/admin/AdminStatisticsPage'
 import { AccountPage } from './features/account/AccountPage'
 import { EmailSettingsPage } from './features/account/EmailSettingsPage'
@@ -37,6 +39,8 @@ export const router = createBrowserRouter([
       { path: '/admin/statistics', element: <RequireAuth role="ADMIN"><AdminStatisticsPage /></RequireAuth> },
       { path: '/admin/monitor', element: <RequireAuth role="ADMIN"><AdminMonitorPage /></RequireAuth> },
       { path: '/admin/flags', element: <RequireAuth role="ADMIN"><AdminFlagsPage /></RequireAuth> },
+      { path: '/admin/bidders', element: <RequireAuth role="ADMIN"><AdminBiddersPage /></RequireAuth> },
+      { path: '/admin/payments', element: <RequireAuth role="ADMIN"><AdminPaymentsPage /></RequireAuth> },
       { path: '/admin/categories', element: <RequireAuth role="ADMIN"><AdminCategoriesPage /></RequireAuth> },
       { path: '/account', element: <RequireAuth><AccountPage /></RequireAuth> },
       { path: '/account/bids', element: <RequireAuth role="BIDDER"><MyBidsPage /></RequireAuth> },

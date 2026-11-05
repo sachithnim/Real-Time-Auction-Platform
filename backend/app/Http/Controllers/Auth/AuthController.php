@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\ErrorCode;
+use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
@@ -11,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -37,7 +40,11 @@ class AuthController extends Controller
         // in after the session itself expires or the browser is closed.
         $credentials = $request->safe()->only(['email', 'password']);
 
-        if (! Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
+        $active = fn (User $user) => ! $user->isDisabled();
+
+        if (! Auth::guard('web')->attemptWhen($credentials, $active, $request->boolean('remember'))) {
+            $this->rejectIfDisabled($credentials);
+
             // Same message for unknown email and wrong password: no account enumeration.
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
@@ -48,6 +55,21 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return new UserResource($request->user());
+    }
+
+    /**
+     * The right password for a disabled account gets a clear answer. Only someone who
+     * knows the password learns the account is disabled, so this reveals nothing more.
+     *
+     * @param  array{email: string, password: string}  $credentials
+     */
+    private function rejectIfDisabled(array $credentials): void
+    {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if ($user?->isDisabled() && Hash::check($credentials['password'], $user->password)) {
+            throw new ApiException(ErrorCode::AccountDisabled, 'This account has been disabled. Contact LiveBid support.');
+        }
     }
 
     public function logout(Request $request): Response

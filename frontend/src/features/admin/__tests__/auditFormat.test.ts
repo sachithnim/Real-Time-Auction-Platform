@@ -12,6 +12,14 @@ describe('audit log wording', () => {
     expect(eventTitle('SOMETHING_NEW')).toBe('Something new')
   })
 
+  it('says why an automatic maximum was stopped', () => {
+    const view = describeEvent(event('AUTO_BID_CANCELLED', { user_id: 2, max_amount: 20000, reason: 'ACCOUNT_DISABLED' }), users)
+
+    expect(view.title).toBe('Automatic bid stopped')
+    expect(view.summary).toBe("Bidder 1's automatic maximum of Rs. 20,000 was stopped because the account was disabled.")
+    expect(view.tone).toBe('warning')
+  })
+
   it('shows an edit as labelled "old → new" lines', () => {
     const view = describeEvent(event('AUCTION_UPDATED', { changes: { title: { from: 'Antique Brass Telescope', to: 'Antique Brass Telescope 1' } } }))
 

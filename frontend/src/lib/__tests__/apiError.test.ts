@@ -40,6 +40,12 @@ describe('friendlyMessage', () => {
     expect(friendlyMessage(info)).toBe('Your bid is too low. The minimum is now Rs. 25,500.')
   })
 
+  it('says a disabled account was disabled, not just "forbidden"', () => {
+    const info = parseApiError(httpError(403, { code: 'ACCOUNT_DISABLED', message: '', details: {} }))
+
+    expect(friendlyMessage(info)).toBe('This account has been disabled. Contact LiveBid support.')
+  })
+
   it('explains being already in the lead', () => {
     const info = parseApiError(httpError(422, { code: 'INVALID_BID', message: '', details: { reason: 'ALREADY_LEADING' } }))
 

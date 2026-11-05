@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, type ReactNode } from 'react'
-import { api, fetchCsrfCookie } from '../../lib/api'
+import { useEffect, useMemo, type ReactNode } from 'react'
+import { api, fetchCsrfCookie, onAccountDisabled } from '../../lib/api'
 import type { User } from '../../types/api'
 import { AuthContext, meQueryKey, type AuthApi, type LoginInput, type RegisterInput } from './useAuth'
 
@@ -14,6 +14,17 @@ async function fetchMe(): Promise<User | null> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const me = useQuery({ queryKey: meQueryKey, queryFn: fetchMe, staleTime: 5 * 60_000 })
+
+  // Disabled by an admin mid-session: the server has signed this browser out, so
+  // forget the user too; protected pages then send them to log in.
+  useEffect(
+    () =>
+      onAccountDisabled(() => {
+        queryClient.clear()
+        queryClient.setQueryData(meQueryKey, null)
+      }),
+    [queryClient],
+  )
 
   const login = useMutation({
     mutationFn: async (input: LoginInput) => {

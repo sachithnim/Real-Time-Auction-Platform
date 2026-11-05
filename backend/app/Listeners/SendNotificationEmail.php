@@ -42,7 +42,8 @@ class SendNotificationEmail
         $emailClass = self::EMAILS[$event::class] ?? null;
         $user = User::find($event->userId);
 
-        if ($emailClass === null || $user === null) {
+        // A disabled account gets no auction emails until an admin enables it again.
+        if ($emailClass === null || $user === null || $user->isDisabled()) {
             return;
         }
 

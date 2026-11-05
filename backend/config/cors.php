@@ -25,7 +25,8 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    // Lets the SPA read the file name of a CSV download.
+    'exposed_headers' => ['Content-Disposition'],
 
     'max_age' => 0,
 

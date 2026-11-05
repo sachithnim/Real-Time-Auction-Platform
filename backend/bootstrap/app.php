@@ -2,6 +2,7 @@
 
 use App\Exceptions\ApiException;
 use App\Exceptions\ApiExceptionRenderer;
+use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureSessionStarted;
 use App\Http\Middleware\EnsureUserHasRole;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Cookie-based Sanctum auth for the first-party SPA.
         $middleware->statefulApi();
+        $middleware->appendToGroup('api', EnsureAccountActive::class);
 
         $middleware->alias([
             'role' => EnsureUserHasRole::class,

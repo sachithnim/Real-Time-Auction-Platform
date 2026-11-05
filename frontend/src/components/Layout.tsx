@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
 import { Footer } from './Footer'
 import { Logo } from './Logo'
 import { ThemeMenu } from './ThemeMenu'
+import { usePopover } from './usePopover'
 import { Avatar, UserMenu } from './UserMenu'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-900'}`
+  `whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-slate-900'}`
 
 interface NavItem {
   to: string
@@ -22,10 +23,25 @@ const adminLinks: NavItem[] = [
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/auctions', label: 'Manage auctions' },
   { to: '/admin/monitor', label: 'Live monitor' },
+  { to: '/admin/bidders', label: 'Bidders' },
+  { to: '/admin/payments', label: 'Payments' },
+]
+
+/** Visited less often: under "More" in the bar, listed in full in the phone menu. */
+const adminMoreLinks: NavItem[] = [
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/flags', label: 'Flags' },
   { to: '/admin/statistics', label: 'Statistics' },
 ]
+
+/**
+ * When the full bar shows. Admins have more links, so they get the menu button up
+ * to a wider screen. Written out in full so Tailwind sees every class.
+ */
+const breakpoints = {
+  default: { bar: 'hidden lg:flex', divider: 'hidden lg:block', narrowOnly: 'lg:hidden' },
+  admin: { bar: 'hidden xl:flex', divider: 'hidden xl:block', narrowOnly: 'xl:hidden' },
+}
 
 const bidderLinks: NavItem[] = [{ to: '/account/bids', label: 'My bids' }]
 
@@ -51,6 +67,8 @@ export function Layout() {
     ...(user?.role === 'BIDDER' ? bidderLinks : []),
   ]
   const closeMenu = () => setMenuOpen(false)
+  const isAdmin = user?.role === 'ADMIN'
+  const bp = isAdmin ? breakpoints.admin : breakpoints.default
 
   const onLogout = async () => {
     closeMenu()
@@ -72,25 +90,26 @@ export function Layout() {
             <Link to="/" aria-label="LiveBid home" onClick={closeMenu}>
               <Logo />
             </Link>
-            {/* The full bar needs room for six admin links; below that the menu button takes over. */}
-            <nav className="hidden gap-1 lg:flex" aria-label="Main">
+            {/* Below this width the menu button takes over. */}
+            <nav className={`${bp.bar} items-center gap-1`} aria-label="Main">
               {links.map((link) => (
                 <NavLink key={link.to} to={link.to} end={link.end} className={navClass}>
                   {link.label}
                 </NavLink>
               ))}
+              {isAdmin && <MoreMenu links={adminMoreLinks} />}
             </nav>
           </div>
           {/* Account first, then the theme menu at the far right: a site-wide setting, kept in the same place on every page. */}
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-3 text-sm lg:flex">
+            <div className={`${bp.bar} items-center gap-3 text-sm`}>
               {user ? <UserMenu user={user} onLogout={onLogout} /> : <Account user={null} onLogout={onLogout} />}
             </div>
-            <span className="hidden h-6 w-px bg-slate-200 lg:block" aria-hidden />
+            <span className={`${bp.divider} h-6 w-px bg-slate-200`} aria-hidden />
             <ThemeMenu />
             <button
               type="button"
-              className="rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+              className={`rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 ${bp.narrowOnly}`}
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -104,9 +123,9 @@ export function Layout() {
         </div>
 
         {menuOpen && (
-          <div id="mobile-menu" className="border-t border-slate-100 px-4 pt-2 pb-4 lg:hidden">
+          <div id="mobile-menu" className={`border-t border-slate-100 px-4 pt-2 pb-4 ${bp.narrowOnly}`}>
             <nav className="flex flex-col gap-1" aria-label="Main">
-              {links.map((link) => (
+              {[...links, ...(isAdmin ? adminMoreLinks : [])].map((link) => (
                 <NavLink key={link.to} to={link.to} end={link.end} className={navClass} onClick={closeMenu}>
                   {link.label}
                 </NavLink>
@@ -149,5 +168,38 @@ function Account({ user, onLogout, onNavigate }: { user: User | null; onLogout: 
         Log out
       </button>
     </>
+  )
+}
+
+/** "More ▾": the admin pages that do not fit in the bar. Highlighted while one of them is open. */
+function MoreMenu({ links }: { links: NavItem[] }) {
+  const { open, rootRef, buttonRef, menuId, toggle, close, buttonProps } = usePopover()
+  const { pathname } = useLocation()
+  const current = links.some((link) => pathname.startsWith(link.to))
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button ref={buttonRef} {...buttonProps} onClick={toggle} className={`flex items-center gap-1 ${navClass({ isActive: current })}`}>
+        More
+        <svg viewBox="0 0 24 24" className={`h-4 w-4 transition ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div id={menuId} role="menu" aria-label="More admin pages" className="absolute left-0 z-40 mt-2 w-44 rounded-lg bg-white p-1 shadow-lg ring-1 ring-slate-200">
+          {links.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              role="menuitem"
+              onClick={() => close()}
+              className={({ isActive }) => `block rounded-md px-2.5 py-2 text-sm ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'}`}
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

@@ -25,6 +25,7 @@ const titles: Record<string, string> = {
   AUTO_BID_CONFIGURED: 'Automatic bid set',
   AUTO_BID_PLACED: 'Automatic bid placed',
   AUTO_BID_MAX_REACHED: 'Maximum reached',
+  AUTO_BID_CANCELLED: 'Automatic bid stopped',
   LEADER_CHANGED: 'Leader changed',
   AUCTION_EXTENDED: 'Auction extended',
   AUCTION_ENDED: 'Auction ended',
@@ -206,6 +207,9 @@ export function describeEvent(event: AuctionEvent, users: AuditUsers = {}): Audi
 
     case 'AUTO_BID_MAX_REACHED':
       return view(`${who('user_id', 'A bidder')}'s maximum of ${rs('max_amount')} was passed. Price is ${rs('price')}.`, 'warning')
+
+    case 'AUTO_BID_CANCELLED':
+      return view(`${who('user_id', 'A bidder')}'s automatic maximum of ${rs('max_amount')} was stopped because the account was disabled.`, 'warning')
 
     case 'LEADER_CHANGED':
       return view(`Lead passed from ${who('previous_leader_id')} to ${who('new_leader_id')} at ${rs('price')}.`, 'bid')
