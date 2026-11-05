@@ -1,6 +1,6 @@
 import { api } from '../../lib/api'
 import type { AuditUsers } from './auditFormat'
-import type { AdminAuction, AdminBidRow, AuctionImage, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, Category, CursorPage, FlagStatus, MonitorSnapshot, Paginated, Single } from '../../types/api'
+import type { AdminAuction, AdminBidder, AdminBidRow, AdminPayment, AuctionImage, AuctionEvent, AuctionStatistics, AuctionStatus, BidFlag, Category, CursorPage, FlagStatus, MonitorSnapshot, Paginated, PaymentCounts, PaymentStatus, Single } from '../../types/api'
 
 export const adminKeys = {
   all: ['admin'] as const,
@@ -12,6 +12,53 @@ export const adminKeys = {
   monitor: ['admin', 'monitor'] as const,
   flags: (status: FlagStatus | 'ALL', page = 1) => ['admin', 'flags', status, page] as const,
   categories: ['admin', 'categories'] as const,
+  bidders: (status: BidderFilter, search: string, page: number) => ['admin', 'bidders', status, search, page] as const,
+  payments: (status: PaymentStatus | 'ALL', search: string, page: number) => ['admin', 'payments', status, search, page] as const,
+}
+
+export type BidderFilter = 'all' | 'active' | 'disabled'
+
+export async function fetchBidders(status: BidderFilter, search: string, page: number) {
+  const { data } = await api.get<Paginated<AdminBidder>>('/api/admin/bidders', {
+    params: { status: status === 'all' ? undefined : status, search: search.trim() || undefined, page, per_page: 20 },
+  })
+  return data
+}
+
+export async function disableBidder(id: number) {
+  const { data } = await api.post<Single<AdminBidder>>(`/api/admin/bidders/${id}/disable`)
+  return data.data
+}
+
+export async function enableBidder(id: number) {
+  const { data } = await api.post<Single<AdminBidder>>(`/api/admin/bidders/${id}/enable`)
+  return data.data
+}
+
+export async function fetchPayments(status: PaymentStatus | 'ALL', search: string, page: number) {
+  const { data } = await api.get<Paginated<AdminPayment> & { counts: PaymentCounts }>('/api/admin/payments', {
+    params: { status: status === 'ALL' ? undefined : status, search: search.trim() || undefined, page, per_page: 20 },
+  })
+  return data
+}
+
+/**
+ * Downloads an admin CSV export. Fetched with the session like any API call (a plain
+ * link would not carry the SPA's headers), then handed to the browser as a file.
+ */
+export async function downloadCsv(path: string, fallbackName: string) {
+  const response = await api.get<Blob>(path, { responseType: 'blob' })
+  const disposition = String(response.headers['content-disposition'] ?? '')
+  const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallbackName
+
+  const url = URL.createObjectURL(response.data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 export interface AuctionInput {

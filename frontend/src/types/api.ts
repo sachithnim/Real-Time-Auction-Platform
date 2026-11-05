@@ -291,3 +291,41 @@ export interface MyBidCounts {
   /** Wins not paid yet. */
   to_pay: number
 }
+
+/** A bidder account as admins see it. */
+export interface AdminBidder {
+  id: number
+  name: string
+  email: string
+  joined_at: string
+  /** Set while an admin has the account blocked. */
+  disabled_at: string | null
+  bids_count: number
+  wins_count: number
+}
+
+/** A winner's payment as admins see it. */
+export interface AdminPayment {
+  id: number
+  auction: { id: number; title: string }
+  bidder: { id: number; name: string; email: string }
+  amount: number
+  status: PaymentStatus
+  attempts: number
+  card_brand: string | null
+  card_last4: string | null
+  reference: string | null
+  failure_reason: string | null
+  paid_at: string | null
+  created_at: string
+}
+
+export interface PaymentCounts {
+  all: number
+  pending: number
+  failed: number
+  paid: number
+  paid_total: number
+  /** Pending and declined payments together. */
+  owed_total: number
+}
