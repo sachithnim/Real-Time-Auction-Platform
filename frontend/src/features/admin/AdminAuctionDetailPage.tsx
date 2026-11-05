@@ -16,6 +16,7 @@ import { AUCTION_EVENTS } from '../realtime/auctionEvents'
 import { adminKeys, cancelAuction, fetchAdminAuction, fetchAdminBids, scheduleAuction } from './api'
 import { AuditLog } from './AuditLog'
 import { PhotoManager } from './PhotoManager'
+import { CsvButton } from './CsvButton'
 
 export function AdminAuctionDetailPage() {
   const id = Number(useParams().id)
@@ -195,6 +196,9 @@ function AdminBids({ auctionId }: { auctionId: number }) {
 
   return (
     <>
+    <div className="mb-3 flex justify-end">
+      <CsvButton path={`/api/admin/auctions/${auctionId}/bids/export`} fileName={`auction-${auctionId}-bids.csv`} label="Download all bids" />
+    </div>
     <table className="min-w-full text-sm">
       <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
         <tr>

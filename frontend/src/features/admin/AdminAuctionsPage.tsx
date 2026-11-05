@@ -9,6 +9,7 @@ import { friendlyMessage, parseApiError } from '../../lib/apiError'
 import { formatRs } from '../../lib/money'
 import type { AuctionStatus } from '../../types/api'
 import { adminKeys, fetchAdminAuctions } from './api'
+import { CsvButton } from './CsvButton'
 
 const statuses: (AuctionStatus | 'ALL')[] = ['ALL', 'DRAFT', 'SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']
 
@@ -53,6 +54,7 @@ export function AdminAuctionsPage() {
               ))}
             </select>
           </label>
+          <CsvButton path="/api/admin/results/export" fileName="auction-results.csv" label="Export results" />
           <Button onClick={() => navigate('/admin/auctions/new')}>New auction</Button>
         </div>
       </div>
