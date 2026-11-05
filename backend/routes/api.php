@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\BidFlagController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MonitorController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AuctionImageFileController;
@@ -100,6 +101,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::delete('auctions/{auction}/images/{image}', [AuctionImageController::class, 'destroy'])->scopeBindings();
     Route::get('auctions/{auction}/bids', [AuctionHistoryController::class, 'bids']);
     Route::get('auctions/{auction}/events', [AuctionHistoryController::class, 'events']);
+    Route::get('payments', [AdminPaymentController::class, 'index']);
     Route::get('bidders', [BidderController::class, 'index']);
     Route::post('bidders/{user}/disable', [BidderController::class, 'disable']);
     Route::post('bidders/{user}/enable', [BidderController::class, 'enable']);
