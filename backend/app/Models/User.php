@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +45,20 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'email_preferences' => 'array',
+            'disabled_at' => 'immutable_datetime',
         ];
+    }
+
+    /** Every bid this user placed. */
+    public function bids(): HasMany
+    {
+        return $this->hasMany(Bid::class);
+    }
+
+    /** Auctions this user won. */
+    public function wonAuctions(): HasMany
+    {
+        return $this->hasMany(Auction::class, 'winner_id');
     }
 
     /** Auctions this bidder follows (their watchlist). */
@@ -131,6 +145,12 @@ class User extends Authenticatable
                 ->when($keepSessionId, fn ($sessions, $id) => $sessions->where('id', '!=', $id))
                 ->delete();
         }
+    }
+
+    /** Blocked by an admin: cannot log in or use the API. */
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
     }
 
     public function isAdmin(): bool

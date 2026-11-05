@@ -18,6 +18,7 @@ enum ErrorCode: string
     case CsrfTokenMismatch = 'CSRF_TOKEN_MISMATCH';
     case TooManyRequests = 'TOO_MANY_REQUESTS';
     case ServerError = 'SERVER_ERROR';
+    case AccountDisabled = 'ACCOUNT_DISABLED';
 
     // Auctions
     case AuctionNotFound = 'AUCTION_NOT_FOUND';
@@ -64,7 +65,7 @@ enum ErrorCode: string
 
             self::StatefulRequestRequired => 400,
             self::Unauthenticated => 401,
-            self::Forbidden => 403,
+            self::Forbidden, self::AccountDisabled => 403,
             self::NotFound, self::AuctionNotFound => 404,
             self::MethodNotAllowed => 405,
             self::CsrfTokenMismatch => 419,
