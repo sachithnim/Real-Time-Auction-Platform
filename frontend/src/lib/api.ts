@@ -31,6 +31,20 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
+type Listener = () => void
+const disabledListeners = new Set<Listener>()
+
+/**
+ * Called when the API says this account was disabled by an admin: the server has
+ * already ended the session, so the app should forget the signed-in user.
+ */
+export function onAccountDisabled(listener: Listener): () => void {
+  disabledListeners.add(listener)
+  return () => {
+    disabledListeners.delete(listener)
+  }
+}
+
 api.interceptors.response.use(
   (response) => {
     const serverTime = response.data?.meta?.server_time
@@ -46,6 +60,9 @@ api.interceptors.response.use(
       config.csrfRetried = true
       await fetchCsrfCookie()
       return api.request(config)
+    }
+    if (parseApiError(error).code === 'ACCOUNT_DISABLED') {
+      disabledListeners.forEach((listener) => listener())
     }
     return Promise.reject(error)
   },

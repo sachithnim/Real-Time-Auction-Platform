@@ -79,6 +79,8 @@ export function friendlyMessage(info: ApiErrorInfo): string {
       return 'You are going too fast. Please wait a moment.'
     case 'UNAUTHENTICATED':
       return 'Please log in to continue.'
+    case 'ACCOUNT_DISABLED':
+      return 'This account has been disabled. Contact LiveBid support.'
     case 'FORBIDDEN':
       return 'Your account cannot do this.'
     case 'CSRF_TOKEN_MISMATCH':
