@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
+import { NotificationBell } from '../features/realtime/NotificationBell'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
 import { Footer } from './Footer'
@@ -105,6 +106,8 @@ export function Layout() {
             <div className={`${bp.bar} items-center gap-3 text-sm`}>
               {user ? <UserMenu user={user} onLogout={onLogout} /> : <Account user={null} onLogout={onLogout} />}
             </div>
+            {/* On every screen size: a missed notice should never be behind the phone menu. */}
+            {user?.role === 'BIDDER' && <NotificationBell />}
             <span className={`${bp.divider} h-6 w-px bg-slate-200`} aria-hidden />
             <ThemeMenu />
             <button
