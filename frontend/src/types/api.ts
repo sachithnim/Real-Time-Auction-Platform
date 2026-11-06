@@ -13,6 +13,8 @@ export interface User {
   name: string
   email: string
   role: Role
+  /** Bidding needs a confirmed email; a banner asks for it until then. */
+  email_verified: boolean
 }
 
 export interface Meta {

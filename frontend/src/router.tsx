@@ -17,6 +17,7 @@ import { UnsubscribedPage } from './features/account/UnsubscribedPage'
 import { RequireAuth } from './features/auth/guards'
 import { AuctionDetailPage } from './features/auctions/AuctionDetailPage'
 import { AuctionListPage } from './features/auctions/AuctionListPage'
+import { EmailVerifiedPage } from './features/auth/EmailVerifiedPage'
 import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
       { path: '/account/bids', element: <RequireAuth role="BIDDER"><MyBidsPage /></RequireAuth> },
       { path: '/account/emails', element: <RequireAuth role="BIDDER"><EmailSettingsPage /></RequireAuth> },
       { path: '/unsubscribed', element: <UnsubscribedPage /> },
+      { path: '/email-verified', element: <EmailVerifiedPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

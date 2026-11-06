@@ -74,7 +74,7 @@ function ProfileForm({ user }: { user: User }) {
     try {
       const saved = await updateProfile({ ...values, current_password: emailChanging ? values.current_password : undefined })
       queryClient.setQueryData(meQueryKey, saved)
-      toast.push({ tone: 'success', title: 'Profile saved', body: emailChanging ? `Log in with ${saved.email} from now on.` : undefined })
+      toast.push({ tone: 'success', title: 'Profile saved', body: emailChanging ? `Log in with ${saved.email} from now on, and confirm it with the link we sent there.` : undefined })
     } catch (e) {
       const info = parseApiError(e)
       const fields = fieldErrors(info)

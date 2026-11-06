@@ -12,7 +12,7 @@ vi.mock('../dashboardApi', async (importOriginal) => ({
   fetchDashboard: vi.fn(),
 }))
 
-const admin: User = { id: 1, first_name: 'Platform', last_name: 'Admin', name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN' }
+const admin: User = { id: 1, first_name: 'Platform', last_name: 'Admin', name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN', email_verified: true }
 const soon = new Date(Date.now() + 30 * 60_000).toISOString()
 
 const quiet: AdminDashboard = {

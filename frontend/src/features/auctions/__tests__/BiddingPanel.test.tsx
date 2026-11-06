@@ -15,7 +15,7 @@ vi.mock('../api', async (importOriginal) => ({
   placeBid: vi.fn(),
 }))
 
-const bidder: User = { id: 5, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER' }
+const bidder: User = { id: 5, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'bidder1@auction.test', role: 'BIDDER', email_verified: true }
 
 const live = {
   id: 3, status: 'LIVE', starting_price: 20_000, current_price: 25_000, min_next_bid: 25_500, min_increment: 100,
@@ -72,5 +72,16 @@ describe('<BiddingPanel> outbid banner', () => {
 
     expect(banner()).toBeNull()
     expect(screen.getByText(/You are the highest bidder/)).toBeInTheDocument()
+  })
+})
+
+describe('<BiddingPanel> unconfirmed email', () => {
+  it('asks to confirm the email instead of showing the bid forms', () => {
+    renderPanel({}, { ...bidder, email_verified: false })
+
+    expect(screen.getByText('Confirm your email to bid')).toBeInTheDocument()
+    expect(screen.getByText('We sent a link to bidder1@auction.test. Open it, then come back here.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Send the link again' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Bid/ })).not.toBeInTheDocument()
   })
 })

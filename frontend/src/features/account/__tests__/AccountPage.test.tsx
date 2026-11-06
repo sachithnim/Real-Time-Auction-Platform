@@ -12,7 +12,7 @@ import { AccountPage } from '../AccountPage'
 
 vi.mock('../accountApi', () => ({ updateProfile: vi.fn(), updatePassword: vi.fn() }))
 
-const asha: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER' }
+const asha: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER', email_verified: true }
 
 function validationError(errors: Record<string, string[]>) {
   const config = { headers: new AxiosHeaders() }

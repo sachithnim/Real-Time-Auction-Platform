@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
+import { VerifyEmailBanner } from '../features/auth/VerifyEmailBanner'
 import { NotificationBell } from '../features/realtime/NotificationBell'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
@@ -140,6 +141,7 @@ export function Layout() {
           </div>
         )}
       </header>
+      {user?.role === 'BIDDER' && !user.email_verified && <VerifyEmailBanner user={user} />}
       {/* tabIndex lets the skip link move focus here, not only scroll. */}
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 focus:outline-none">
         <Outlet />

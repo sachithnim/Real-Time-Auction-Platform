@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import type { Auction } from '../../types/api'
+import { ResendVerification } from '../auth/ResendVerification'
 import { useAuth } from '../auth/useAuth'
 import { AutoBidForm } from './AutoBidForm'
 import { BidForm } from './BidForm'
@@ -22,6 +23,16 @@ export function BiddingPanel({ auction }: { auction: Auction }) {
 
   if (user.role === 'ADMIN') {
     return <p className="text-sm text-slate-500">Admins cannot bid.</p>
+  }
+
+  if (!user.email_verified) {
+    return (
+      <div className="space-y-1 rounded-md bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
+        <p className="font-semibold">Confirm your email to bid</p>
+        <p>We sent a link to {user.email}. Open it, then come back here.</p>
+        <ResendVerification className="text-amber-900" />
+      </div>
+    )
   }
 
   // The bidder gets a pseudonym with their first bid, so having one and not leading means outbid.
