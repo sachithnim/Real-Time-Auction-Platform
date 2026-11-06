@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AuctionImageFileController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
@@ -53,6 +54,12 @@ Route::middleware(['signed', 'throttle:30,1'])->group(function () {
     Route::post('email/unsubscribe/{user}/{type}', [EmailPreferenceController::class, 'unsubscribeOneClick']);
 });
 
+// The "Confirm your email" link: no login needed, the signature is checked in the controller
+// so a bad link lands on a friendly page instead of an error.
+Route::get('email/verify/{user}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware('throttle:30,1')
+    ->name('verification.verify');
+
 // Public: guests and bidders can browse auctions.
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('auctions', [AuctionController::class, 'index']);
@@ -64,13 +71,13 @@ Route::get('auction-images/{filename}', [AuctionImageFileController::class, 'sho
 
 // Bidding: bidders only (admins cannot bid), rate limited, scanned for suspicious
 // patterns after the response is sent, safe to retry.
-Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', ScanBiddingActivity::class, 'idempotent'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:BIDDER', 'verified.email', 'throttle:bids', ScanBiddingActivity::class, 'idempotent'])->group(function () {
     Route::post('auctions/{auction}/bids', [BidController::class, 'store']);
     Route::put('auctions/{auction}/auto-bid', [AutoBidController::class, 'update']);
 });
 
 // Paying for a won auction: winner only (checked in PaymentService), safe to retry.
-Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:BIDDER', 'verified.email', 'throttle:bids', 'idempotent'])->group(function () {
     Route::post('auctions/{auction}/payment', [PaymentController::class, 'store']);
 });
 
@@ -78,6 +85,7 @@ Route::middleware(['auth:sanctum', 'role:BIDDER', 'throttle:bids', 'idempotent']
 Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
     Route::put('me/profile', [AccountController::class, 'updateProfile']);
     Route::put('me/password', [AccountController::class, 'updatePassword']);
+    Route::post('me/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:6,1');
 });
 
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {

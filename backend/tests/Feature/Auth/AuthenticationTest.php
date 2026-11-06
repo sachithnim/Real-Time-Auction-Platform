@@ -38,6 +38,8 @@ class AuthenticationTest extends TestCase
                 'name' => 'Asha Perera',
                 'email' => 'asha@example.com',
                 'role' => 'BIDDER',
+                // A new account confirms its email before it can bid.
+                'email_verified' => false,
             ]]);
 
         $user = User::where('email', 'asha@example.com')->firstOrFail();

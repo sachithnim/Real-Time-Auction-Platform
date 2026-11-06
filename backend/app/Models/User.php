@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\EmailType;
 use App\Enums\UserRole;
 use App\Notifications\ResetPasswordEmail;
+use App\Notifications\VerifyEmailNotice;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +22,7 @@ use Illuminate\Support\Str;
 // 'role' is deliberately not fillable: a request can never promote itself to admin.
 #[Fillable(['first_name', 'last_name', 'name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -131,6 +133,12 @@ class User extends Authenticatable
     {
         $this->email_preferences = [...$this->emailPreferences(), ...$changes];
         $this->save();
+    }
+
+    /** "Confirm your email": branded, queued, with a signed link that needs no login. */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotice);
     }
 
     /** The "Forgot password?" email: branded, queued, and linking to the web app. */

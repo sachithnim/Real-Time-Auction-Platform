@@ -25,6 +25,8 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role->value,
+            // Bidding needs a confirmed email; the app shows a banner until then.
+            'email_verified' => $this->hasVerifiedEmail(),
         ];
     }
 }

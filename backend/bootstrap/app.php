@@ -3,6 +3,7 @@
 use App\Exceptions\ApiException;
 use App\Exceptions\ApiExceptionRenderer;
 use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\EnsureEmailVerified;
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureSessionStarted;
 use App\Http\Middleware\EnsureUserHasRole;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
             'idempotent' => EnsureIdempotency::class,
             'session.required' => EnsureSessionStarted::class,
+            'verified.email' => EnsureEmailVerified::class,
         ]);
 
         // Check the role before route-model binding, so a bidder probing admin
