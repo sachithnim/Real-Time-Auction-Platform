@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { Countdown } from '../../components/Countdown'
 import { ErrorState } from '../../components/ErrorState'
@@ -15,6 +15,7 @@ import { formatRs } from '../../lib/money'
 import { serverNow } from '../../lib/serverClock'
 import { formatDateTime, formatDuration, formatFromNow } from '../../lib/time'
 import type { Auction } from '../../types/api'
+import { useAuth } from '../auth/useAuth'
 import { RealtimeBadge } from '../realtime/RealtimeBadge'
 import { useAuctionChannel } from '../realtime/useAuctionChannel'
 import { auctionKeys, fetchAuction } from './api'
@@ -23,6 +24,7 @@ import { BiddingPanel } from './BiddingPanel'
 import { BidHistory } from './BidHistory'
 import { CheckoutPanel } from './CheckoutPanel'
 import { leaderBadge } from './leaderBadge'
+import { MobileBidBar } from './MobileBidBar'
 import { PhotoGallery } from './PhotoGallery'
 import { priceLabel } from './priceLabel'
 import { reserveBadge } from './statusText'
@@ -33,6 +35,9 @@ export function AuctionDetailPage() {
   const auctionId = Number(useParams().id)
   const auction = useQuery({ queryKey: auctionKeys.detail(auctionId), queryFn: () => fetchAuction(auctionId) })
   const realtime = useAuctionChannel(auctionId)
+  const { user } = useAuth()
+  // The phone bid bar shows while this card is off screen.
+  const bidCard = useRef<HTMLDivElement>(null)
   useDocumentTitle(auction.data?.title)
 
   useRefreshAtBoundaries(auction.data)
@@ -88,6 +93,7 @@ export function AuctionDetailPage() {
 
         {/* Price, countdown and the bid form come first on phones; beside the history on wide screens. */}
         <div className="order-first space-y-6 lg:order-none">
+          <div ref={bidCard} className="scroll-mt-4">
           <Card className="space-y-4">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -114,6 +120,7 @@ export function AuctionDetailPage() {
 
             <BiddingPanel auction={a} />
           </Card>
+          </div>
 
           <Card>
             <h2 className="mb-2 font-semibold">Details</h2>
@@ -137,6 +144,7 @@ export function AuctionDetailPage() {
           </Card>
         </div>
       </div>
+      <MobileBidBar auction={a} user={user} bidCard={bidCard} />
     </div>
   )
 }

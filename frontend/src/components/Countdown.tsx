@@ -9,10 +9,12 @@ interface Props {
   /** Highlight the final window in which a bid extends the auction. */
   antiSnipeSeconds?: number
   endedText?: string
+  /** Smaller, for the phone bid bar. */
+  compact?: boolean
 }
 
 /** Counts down on the server's clock, so a wrong local clock does not matter. */
-export function Countdown({ target, label, antiSnipeSeconds = 0, endedText = 'Ended' }: Props) {
+export function Countdown({ target, label, antiSnipeSeconds = 0, endedText = 'Ended', compact = false }: Props) {
   const [now, setNow] = useState(() => serverNow())
 
   useEffect(() => {
@@ -26,10 +28,10 @@ export function Countdown({ target, label, antiSnipeSeconds = 0, endedText = 'En
   return (
     <div role="timer" aria-live="off">
       {label && <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>}
-      <div className={`font-mono text-2xl font-semibold tabular-nums ${urgent ? 'text-red-600' : 'text-slate-900'}`}>
+      <div className={`font-mono font-semibold tabular-nums ${compact ? 'text-base leading-tight' : 'text-2xl'} ${urgent ? 'text-red-600' : 'text-slate-900'}`}>
         {left.ended ? endedText : formatRemaining(left)}
       </div>
-      {urgent && (
+      {urgent && !compact && (
         <div role="status" className="text-xs text-red-600">
           Bids now extend the auction
         </div>
