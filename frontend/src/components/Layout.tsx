@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
+import { VerifyEmailBanner } from '../features/auth/VerifyEmailBanner'
+import { NotificationBell } from '../features/realtime/NotificationBell'
 import { useUserNotifications } from '../features/realtime/useUserNotifications'
 import type { User } from '../types/api'
 import { Footer } from './Footer'
@@ -105,6 +107,8 @@ export function Layout() {
             <div className={`${bp.bar} items-center gap-3 text-sm`}>
               {user ? <UserMenu user={user} onLogout={onLogout} /> : <Account user={null} onLogout={onLogout} />}
             </div>
+            {/* On every screen size: a missed notice should never be behind the phone menu. */}
+            {user?.role === 'BIDDER' && <NotificationBell />}
             <span className={`${bp.divider} h-6 w-px bg-slate-200`} aria-hidden />
             <ThemeMenu />
             <button
@@ -137,6 +141,7 @@ export function Layout() {
           </div>
         )}
       </header>
+      {user?.role === 'BIDDER' && !user.email_verified && <VerifyEmailBanner user={user} />}
       {/* tabIndex lets the skip link move focus here, not only scroll. */}
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 focus:outline-none">
         <Outlet />

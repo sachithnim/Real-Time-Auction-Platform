@@ -79,6 +79,8 @@ export function friendlyMessage(info: ApiErrorInfo): string {
       return 'You are going too fast. Please wait a moment.'
     case 'UNAUTHENTICATED':
       return 'Please log in to continue.'
+    case 'EMAIL_NOT_VERIFIED':
+      return 'Confirm your email address before bidding. Check your inbox for the link.'
     case 'ACCOUNT_DISABLED':
       return 'This account has been disabled. Contact LiveBid support.'
     case 'FORBIDDEN':

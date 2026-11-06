@@ -5,12 +5,15 @@ namespace App\Models;
 use App\Enums\EmailType;
 use App\Enums\UserRole;
 use App\Notifications\ResetPasswordEmail;
+use App\Notifications\VerifyEmailNotice;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +22,7 @@ use Illuminate\Support\Str;
 // 'role' is deliberately not fillable: a request can never promote itself to admin.
 #[Fillable(['first_name', 'last_name', 'name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -47,6 +50,15 @@ class User extends Authenticatable
             'email_preferences' => 'array',
             'disabled_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * The inbox under the bell, newest first. Replaces Laravel's default so the
+     * entries use the prunable Notice model.
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notice::class, 'notifiable')->latest('updated_at');
     }
 
     /** Every bid this user placed. */
@@ -121,6 +133,12 @@ class User extends Authenticatable
     {
         $this->email_preferences = [...$this->emailPreferences(), ...$changes];
         $this->save();
+    }
+
+    /** "Confirm your email": branded, queued, with a signed link that needs no login. */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotice);
     }
 
     /** The "Forgot password?" email: branded, queued, and linking to the web app. */

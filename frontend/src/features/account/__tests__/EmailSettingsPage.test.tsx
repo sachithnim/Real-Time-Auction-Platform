@@ -16,7 +16,7 @@ vi.mock('../emailPreferences', async (importOriginal) => ({
   updateEmailPreferences: vi.fn(),
 }))
 
-const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER' }
+const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER', email_verified: true }
 const allOn: EmailPreferences = { OUTBID: true, MAX_REACHED: true, WON: true, REMINDERS: true, RECEIPTS: true }
 
 function renderAt(path: string, user: User | null = bidder) {

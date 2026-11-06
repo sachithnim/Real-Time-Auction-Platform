@@ -19,6 +19,7 @@ enum ErrorCode: string
     case TooManyRequests = 'TOO_MANY_REQUESTS';
     case ServerError = 'SERVER_ERROR';
     case AccountDisabled = 'ACCOUNT_DISABLED';
+    case EmailNotVerified = 'EMAIL_NOT_VERIFIED';
 
     // Auctions
     case AuctionNotFound = 'AUCTION_NOT_FOUND';
@@ -65,7 +66,7 @@ enum ErrorCode: string
 
             self::StatefulRequestRequired => 400,
             self::Unauthenticated => 401,
-            self::Forbidden, self::AccountDisabled => 403,
+            self::Forbidden, self::AccountDisabled, self::EmailNotVerified => 403,
             self::NotFound, self::AuctionNotFound => 404,
             self::MethodNotAllowed => 405,
             self::CsrfTokenMismatch => 419,

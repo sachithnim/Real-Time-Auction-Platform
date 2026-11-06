@@ -6,8 +6,8 @@ import type { User } from '../../types/api'
 import { initials } from '../../lib/initials'
 import { UserMenu } from '../UserMenu'
 
-const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER' }
-const admin: User = { id: 1, first_name: 'Platform', last_name: 'Admin', name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN' }
+const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER', email_verified: true }
+const admin: User = { id: 1, first_name: 'Platform', last_name: 'Admin', name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN', email_verified: true }
 
 function renderMenu(user: User) {
   const onLogout = vi.fn()

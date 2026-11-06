@@ -30,6 +30,7 @@ class AuthController extends Controller
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
+        $user->sendEmailVerificationNotification();
 
         return (new UserResource($user))->response()->setStatusCode(201);
     }

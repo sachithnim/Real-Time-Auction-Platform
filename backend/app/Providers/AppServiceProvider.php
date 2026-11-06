@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Listeners\SendNotificationEmail;
+use App\Listeners\StoreInboxNotice;
 use App\Models\BidIncrementRule;
 use App\Services\Bidding\BidderPseudonyms;
 use App\Services\Bidding\IncrementCalculator;
@@ -37,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Each user notification also goes out as an email (when the user wants it).
         Event::listen(array_keys(SendNotificationEmail::EMAILS), SendNotificationEmail::class);
+        // …and is kept in their inbox under the bell.
+        Event::listen(array_keys(SendNotificationEmail::EMAILS), StoreInboxNotice::class);
     }
 
     private function configureRateLimiting(): void

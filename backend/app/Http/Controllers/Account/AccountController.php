@@ -28,6 +28,10 @@ class AccountController extends Controller
         $user->update([...$data, 'name' => User::fullName($data['first_name'], $data['last_name'])]);
 
         if ($emailChanged) {
+            // The new address must be confirmed before bidding again.
+            $user->forceFill(['email_verified_at' => null])->save();
+            $user->sendEmailVerificationNotification();
+
             // To the old address: if someone else made the change, the owner still hears of it.
             Notification::route('mail', $oldEmail)->notify(
                 new AccountSecurityEmail(AccountChange::EmailChanged, $user->first_name, $user->email),

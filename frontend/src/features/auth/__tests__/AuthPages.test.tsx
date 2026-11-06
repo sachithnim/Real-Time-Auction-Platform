@@ -7,7 +7,7 @@ import { LoginPage } from '../LoginPage'
 import { RegisterPage } from '../RegisterPage'
 import { AuthContext, type AuthApi } from '../useAuth'
 
-const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER' }
+const bidder: User = { id: 2, first_name: 'Asha', last_name: 'Perera', name: 'Asha Perera', email: 'asha@example.com', role: 'BIDDER', email_verified: true }
 
 function renderPage(path: '/login' | '/register') {
   const auth = {

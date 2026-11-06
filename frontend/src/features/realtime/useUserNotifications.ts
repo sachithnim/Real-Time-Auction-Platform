@@ -3,18 +3,9 @@ import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { useToast } from '../../components/useToast'
 import { getEcho } from '../../lib/echo'
-import { formatRs } from '../../lib/money'
 import { auctionKeys } from '../auctions/api'
-import { reminderToast, type WatchReminderNotice } from './reminders'
-
-interface Notice {
-  auction_id: number
-  title: string
-  current_price?: number
-  min_next_bid?: number
-  max_amount?: number
-  final_price?: number
-}
+import { inboxKey } from './inboxApi'
+import { noticeText, type NoticeData } from './noticeText'
 
 /**
  * Listens on the signed-in bidder's private channel (authorized by the API)
@@ -43,39 +34,27 @@ export function useUserNotifications(userId: number | null) {
       // The list cards show "You're leading" / "Outbid" too.
       queryClient.invalidateQueries({ queryKey: ['auctions', 'list'] })
       queryClient.invalidateQueries({ queryKey: ['auctions', 'mine'] })
+      // The server stored it in the inbox before sending it: the bell picks it up.
+      queryClient.invalidateQueries({ queryKey: inboxKey })
     }
     // Offered unless the bidder is already looking at that auction.
     const viewAuction = (auctionId: number) =>
       pathRef.current === `/auctions/${auctionId}` ? undefined : { label: 'View auction', onClick: () => navigate(`/auctions/${auctionId}`) }
 
+    // The same words as the bell; a payment receipt is only kept there (the bidder just paid).
+    const show = (type: string) => (n: NoticeData) => {
+      const { tone, title, body } = noticeText(type, n)
+      toast.push({ tone, title, body, action: viewAuction(n.auction_id) })
+      refresh(n.auction_id)
+    }
+
     echo
       .private(`user.${userId}`)
-      .listen('.Outbid', (n: Notice) => {
-        toast.push({
-          tone: 'warning',
-          title: `Outbid on ${n.title}`,
-          body: `Price is now ${formatRs(n.current_price)}. Bid ${formatRs(n.min_next_bid)} to lead again.`,
-          action: viewAuction(n.auction_id),
-        })
-        refresh(n.auction_id)
-      })
-      .listen('.AutoBidMaxReached', (n: Notice) => {
-        toast.push({
-          tone: 'warning',
-          title: 'Your maximum was reached',
-          body: `${n.title}: your maximum of ${formatRs(n.max_amount)} has been passed.`,
-          action: viewAuction(n.auction_id),
-        })
-        refresh(n.auction_id)
-      })
-      .listen('.AuctionWon', (n: Notice) => {
-        toast.push({ tone: 'success', title: 'You won!', body: `${n.title} for ${formatRs(n.final_price)}.`, action: viewAuction(n.auction_id) })
-        refresh(n.auction_id)
-      })
-      .listen('.WatchedAuctionReminder', (n: WatchReminderNotice) => {
-        toast.push({ tone: 'info', ...reminderToast(n), action: viewAuction(n.auction_id) })
-        refresh(n.auction_id)
-      })
+      .listen('.Outbid', show('Outbid'))
+      .listen('.AutoBidMaxReached', show('AutoBidMaxReached'))
+      .listen('.AuctionWon', show('AuctionWon'))
+      .listen('.WatchedAuctionReminder', show('WatchedAuctionReminder'))
+      .listen('.PaymentReceived', () => queryClient.invalidateQueries({ queryKey: inboxKey }))
 
     return () => echo.leave(`user.${userId}`)
   }, [userId, toast, queryClient, navigate])
