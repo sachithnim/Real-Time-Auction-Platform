@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\IdempotencyKey;
+use App\Models\Notice;
 use Illuminate\Support\Facades\Schedule;
 
 // A sweep's overlap lock expires after this many minutes. Laravel's default is
@@ -16,5 +17,5 @@ Schedule::command('auctions:close-due')->everyMinute()->withoutOverlapping($swee
 // Watchlist reminders: "starts soon" / "ends soon", each sent once per bidder.
 Schedule::command('auctions:remind-watchers')->everyMinute()->withoutOverlapping($sweepLockMinutes);
 
-// Delete idempotency keys older than their retention window.
-Schedule::command('model:prune', ['--model' => [IdempotencyKey::class]])->daily();
+// Delete idempotency keys older than their retention window, and old inbox notices.
+Schedule::command('model:prune', ['--model' => [IdempotencyKey::class, Notice::class]])->daily();

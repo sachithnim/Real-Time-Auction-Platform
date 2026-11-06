@@ -21,6 +21,7 @@ use App\Http\Controllers\BidController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\MyBidsController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\ScanBiddingActivity;
@@ -81,6 +82,9 @@ Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'role:BIDDER'])->group(function () {
     Route::get('me/bids', [MyBidsController::class, 'index']);
+    Route::get('me/notifications', [NotificationController::class, 'index']);
+    Route::post('me/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::post('me/notifications/{notice}/read', [NotificationController::class, 'markRead'])->whereUuid('notice');
     Route::get('me/email-preferences', [EmailPreferenceController::class, 'show']);
     Route::put('me/email-preferences', [EmailPreferenceController::class, 'update']);
     Route::get('auctions/{auction}/auto-bid', [AutoBidController::class, 'show']);

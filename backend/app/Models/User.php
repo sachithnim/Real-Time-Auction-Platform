@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,15 @@ class User extends Authenticatable
             'email_preferences' => 'array',
             'disabled_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * The inbox under the bell, newest first. Replaces Laravel's default so the
+     * entries use the prunable Notice model.
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notice::class, 'notifiable')->latest('updated_at');
     }
 
     /** Every bid this user placed. */
