@@ -10,6 +10,7 @@ use App\Models\AutoBid;
 use App\Models\User;
 use App\Services\AuctionEventRecorder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 
 /**
  * Admins blocking and unblocking bidders. A disabled bidder is signed out
@@ -31,6 +32,8 @@ class BidderAccounts
 
         $bidder->forceFill(['disabled_at' => now()])->save();
         $bidder->signOutOtherSessions();
+        // A reset link already in their inbox must not work either.
+        Password::broker()->deleteToken($bidder);
         $this->stopAutoBids($bidder, $admin);
 
         return $bidder;
