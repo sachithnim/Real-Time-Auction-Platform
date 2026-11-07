@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '../../../types/api'
 import { AuthContext, type AuthApi } from '../../auth/useAuth'
 import { AdminDashboardPage } from '../AdminDashboardPage'
@@ -13,7 +13,9 @@ vi.mock('../dashboardApi', async (importOriginal) => ({
 }))
 
 const admin: User = { id: 1, first_name: 'Platform', last_name: 'Admin', name: 'Platform Admin', email: 'admin@auction.test', role: 'ADMIN', email_verified: true }
-const soon = new Date(Date.now() + 30 * 60_000).toISOString()
+// A fixed "now", so "starts in 30 min" does not depend on how long the test takes to run.
+const now = '2030-03-01T10:00:00.000Z'
+const soon = '2030-03-01T10:30:00.000Z'
 
 const quiet: AdminDashboard = {
   auctions: { draft: 0, scheduled: 0, live: 0 },
@@ -38,7 +40,14 @@ function renderPage(data: AdminDashboard) {
   )
 }
 
-beforeEach(() => vi.mocked(fetchDashboard).mockReset())
+beforeEach(() => {
+  vi.mocked(fetchDashboard).mockReset()
+  // Only the date is frozen: timers stay real, so the page still loads and re-renders as usual.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(now))
+})
+
+afterEach(() => vi.useRealTimers())
 
 describe('<AdminDashboardPage>', () => {
   it('greets the admin and shows calm empty states on a quiet day', async () => {
@@ -70,13 +79,13 @@ describe('<AdminDashboardPage>', () => {
       ...quiet,
       starting_soon: [{ id: 7, title: 'Brass Telescope', bids_count: 0, images_count: 0, starting_price: 15_000, start_at: soon }],
       recent_activity: [
-        { id: 1, type: 'BID_PLACED', auction: { id: 7, title: 'Brass Telescope' }, actor: 'Asha Perera', amount: 25_500, created_at: new Date().toISOString() },
+        { id: 1, type: 'BID_PLACED', auction: { id: 7, title: 'Brass Telescope' }, actor: 'Asha Perera', amount: 25_500, created_at: '2030-03-01T09:58:00.000Z' },
       ],
     })
 
     const row = (await screen.findAllByRole('link', { name: 'Brass Telescope' }))[0].closest('li')!
     expect(row).toHaveTextContent('No photos')
-    expect(row).toHaveTextContent('starts in 29 min')
+    expect(row).toHaveTextContent('starts in 30 min')
     expect(screen.getByText('Bid placed')).toHaveTextContent('Bid placed · Rs. 25,500')
     expect(screen.getByText(/Asha Perera/)).toBeInTheDocument()
   })
