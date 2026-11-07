@@ -12,6 +12,7 @@ use App\Services\Bidding\BidService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -108,6 +109,15 @@ class BidderAccountsApiTest extends TestCase
 
         $this->assertDatabaseMissing('sessions', ['id' => 'ashas-phone']);
         $this->assertNotSame('old-token', $this->asha->fresh()->remember_token);
+    }
+
+    public function test_disabling_cancels_any_reset_link_already_sent(): void
+    {
+        Password::broker()->createToken($this->asha);
+
+        $this->disable($this->asha)->assertOk();
+
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'asha@example.com']);
     }
 
     public function test_disabling_stops_every_private_maximum_and_records_it(): void

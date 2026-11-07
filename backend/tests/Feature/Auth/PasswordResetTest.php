@@ -117,6 +117,28 @@ class PasswordResetTest extends TestCase
         $this->reset(['password_confirmation' => 'something-else'])->assertUnprocessable();
     }
 
+    public function test_a_disabled_account_gets_the_same_answer_but_no_email(): void
+    {
+        $this->asha->forceFill(['disabled_at' => now()])->save();
+
+        $this->postJson('/api/auth/forgot-password', ['email' => 'asha@example.com'])->assertStatus(202);
+
+        Notification::assertNothingSent();
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'asha@example.com']);
+    }
+
+    public function test_a_link_sent_before_the_account_was_disabled_stops_working(): void
+    {
+        $token = Password::broker()->createToken($this->asha);
+        $this->asha->forceFill(['disabled_at' => now()])->save();
+
+        $this->reset(['token' => $token])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.details.errors.token.0', 'This reset link is invalid or has expired. Ask for a new one.');
+
+        $this->assertTrue(Hash::check('password', $this->asha->fresh()->password));
+    }
+
     public function test_forgot_password_is_rate_limited_per_email(): void
     {
         foreach (range(1, 5) as $ignored) {

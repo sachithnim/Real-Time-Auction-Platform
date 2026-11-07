@@ -22,14 +22,24 @@ class PasswordResetController extends Controller
     public function forgot(ForgotPasswordRequest $request): Response
     {
         // The same answer whether or not the account exists (or was just sent a link),
-        // so this cannot be used to find out who has an account.
-        Password::broker()->sendResetLink(['email' => $request->validated('email')]);
+        // so this cannot be used to find out who has an account. A disabled account gets
+        // no link either: a new password would not let it in, so it would only mislead.
+        $email = $request->validated('email');
+
+        if (User::where('email', $email)->first()?->isDisabled() !== true) {
+            Password::broker()->sendResetLink(['email' => $email]);
+        }
 
         return response()->noContent(202);
     }
 
     public function reset(ResetPasswordRequest $request): Response
     {
+        // A link sent before the account was disabled no longer works.
+        if (User::where('email', $request->validated('email'))->first()?->isDisabled()) {
+            $this->rejectLink();
+        }
+
         $status = Password::broker()->reset(
             $request->safe()->only(['email', 'password', 'token']),
             function (User $user, string $password) {
@@ -42,12 +52,17 @@ class PasswordResetController extends Controller
         );
 
         if ($status !== Password::PASSWORD_RESET) {
-            // An unknown email reads the same as a bad token: no account enumeration here either.
-            throw ValidationException::withMessages([
-                'token' => 'This reset link is invalid or has expired. Ask for a new one.',
-            ]);
+            $this->rejectLink();
         }
 
         return response()->noContent();
+    }
+
+    /** An unknown email, a disabled account and a bad token all read the same: nothing to enumerate. */
+    private function rejectLink(): never
+    {
+        throw ValidationException::withMessages([
+            'token' => 'This reset link is invalid or has expired. Ask for a new one.',
+        ]);
     }
 }
