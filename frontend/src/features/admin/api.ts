@@ -109,6 +109,12 @@ export async function cancelAuction(id: number, reason: string | null) {
   return data.data
 }
 
+/** A new draft copied from an auction that did not sell. */
+export async function relistAuction(id: number) {
+  const { data } = await api.post<Single<AdminAuction>>(`/api/admin/auctions/${id}/relist`)
+  return data.data
+}
+
 /** One page of the audit log, oldest first; "Load more" asks for the next page. */
 export async function fetchAuctionEvents(id: number, type: string, page = 1) {
   const { data } = await api.get<Paginated<AuctionEvent> & { meta: { users: AuditUsers } }>(`/api/admin/auctions/${id}/events`, {
