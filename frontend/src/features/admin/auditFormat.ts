@@ -32,6 +32,7 @@ const titles: Record<string, string> = {
   WINNER_SELECTED: 'Winner selected',
   RESERVE_NOT_MET: 'Reserve not met',
   AUCTION_CANCELLED: 'Auction cancelled',
+  AUCTION_RELISTED: 'Relisted',
   PAYMENT_SUCCEEDED: 'Payment received',
   PAYMENT_FAILED: 'Payment declined',
 }
@@ -147,7 +148,7 @@ export function describeEvent(event: AuctionEvent, users: AuditUsers = {}): Audi
   switch (event.type) {
     case 'AUCTION_CREATED':
       return view(
-        `Created as a draft "${String(p.title ?? '')}".`,
+        `Created as a draft "${String(p.title ?? '')}"${typeof p.relisted_from === 'number' ? `, relisted from auction #${p.relisted_from}` : ''}.`,
         'neutral',
         Object.keys(fieldLabels)
           .filter((field) => field in p && field !== 'title' && field !== 'description')
@@ -240,6 +241,9 @@ export function describeEvent(event: AuctionEvent, users: AuditUsers = {}): Audi
       const while_ = statusWords[String(p.from_status)] ?? String(p.from_status ?? '').toLowerCase()
       return view(`Cancelled while it was ${while_}.${reason}`, 'danger')
     }
+
+    case 'AUCTION_RELISTED':
+      return view(`Relisted as a new draft, auction #${String(p.new_auction_id ?? '?')}.`, 'neutral')
 
     case 'PAYMENT_SUCCEEDED':
       return view(`${event.actor?.name ?? 'The winner'} paid ${rs('amount')} by ${cardLabel(p)}.`, 'success', [

@@ -13,7 +13,7 @@ import { resultLabels } from '../../lib/labels'
 import { formatRs } from '../../lib/money'
 import { formatDuration } from '../../lib/time'
 import { AUCTION_EVENTS } from '../realtime/auctionEvents'
-import { adminKeys, cancelAuction, fetchAdminAuction, fetchAdminBids, scheduleAuction } from './api'
+import { adminKeys, cancelAuction, fetchAdminAuction, fetchAdminBids, relistAuction, scheduleAuction } from './api'
 import { AuditLog } from './AuditLog'
 import { PhotoManager } from './PhotoManager'
 import { CsvButton } from './CsvButton'
@@ -61,6 +61,16 @@ export function AdminAuctionDetailPage() {
     onError: onActionError,
   })
 
+  const relist = useMutation({
+    mutationFn: () => relistAuction(id),
+    onSuccess: (draft) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.all })
+      toast.push({ tone: 'success', title: `Draft #${draft.id} created`, body: 'Check the dates and details, then schedule it.' })
+      navigate(`/admin/auctions/${draft.id}/edit`)
+    },
+    onError: onActionError,
+  })
+
   if (auction.isPending) {
     return <DashboardSkeleton tiles={4} label="Loading auction" />
   }
@@ -70,6 +80,8 @@ export function AdminAuctionDetailPage() {
 
   const a = auction.data
   const cancellable = ['DRAFT', 'SCHEDULED', 'LIVE'].includes(a.status)
+  // An item that did not sell can go up again; a sold one is gone.
+  const relistable = a.status === 'CANCELLED' || (a.status === 'COMPLETED' && a.result !== 'SOLD')
 
   return (
     <div className="space-y-6">
@@ -100,6 +112,7 @@ export function AdminAuctionDetailPage() {
           {a.status !== 'DRAFT' && <Button variant="secondary" onClick={() => navigate(`/auctions/${a.id}`)}>View as bidder</Button>}
           {a.status === 'DRAFT' && <Button variant="secondary" onClick={() => navigate(`/admin/auctions/${a.id}/edit`)}>Edit</Button>}
           {a.status === 'DRAFT' && <Button busy={schedule.isPending} onClick={() => schedule.mutate()}>Schedule</Button>}
+          {relistable && <Button busy={relist.isPending} onClick={() => relist.mutate()}>Relist as new draft</Button>}
           {cancellable && cancelReason === null && (
             <Button variant="danger" onClick={() => setCancelReason('')}>Cancel auction</Button>
           )}

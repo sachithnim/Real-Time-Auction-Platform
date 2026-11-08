@@ -1,5 +1,6 @@
 import { api } from '../../lib/api'
 import type { ListParams } from './listParams'
+import type { PriceHistory } from './priceChartModel'
 import type { Auction, AuctionStatus, AutoBid, AutoBidResponse, BidHistoryRow, Category, CursorPage, Paginated, Payment, PlaceBidResponse, Single } from '../../types/api'
 
 export const auctionKeys = {
@@ -9,6 +10,7 @@ export const auctionKeys = {
   payment: (id: number) => ['auctions', 'payment', id] as const,
   detail: (id: number) => ['auctions', 'detail', id] as const,
   bids: (id: number) => ['auctions', 'bids', id] as const,
+  priceHistory: (id: number) => ['auctions', 'price-history', id] as const,
   autoBid: (id: number) => ['auctions', 'auto-bid', id] as const,
 }
 
@@ -75,6 +77,12 @@ export async function fetchAuction(id: number) {
 export async function fetchBidHistory(id: number, cursor: string | null = null) {
   const { data } = await api.get<CursorPage<BidHistoryRow>>(`/api/auctions/${id}/bids`, { params: { per_page: 50, cursor: cursor ?? undefined } })
   return data
+}
+
+/** Every accepted bid's amount, type and time, oldest first, for the price chart. */
+export async function fetchPriceHistory(id: number) {
+  const { data } = await api.get<{ data: PriceHistory }>(`/api/auctions/${id}/price-history`)
+  return data.data
 }
 
 export async function fetchMyAutoBid(id: number) {

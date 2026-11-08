@@ -127,6 +127,31 @@ class AuctionImageService
      *
      * @return array<string, mixed>
      */
+    /**
+     * Copies every photo of one auction to another as new files with new names, so
+     * removing a photo from either never affects the other. Call it inside the
+     * transaction that creates `$to`; if that rolls back, delete the returned paths.
+     *
+     * @return list<string> The new files' paths.
+     */
+    public function copyAll(Auction $from, Auction $to): array
+    {
+        $disk = Storage::disk(self::DISK);
+        $paths = [];
+
+        foreach ($from->images()->get() as $image) {
+            $filename = Str::random(40).'.'.pathinfo($image->filename, PATHINFO_EXTENSION);
+            $path = "auctions/{$to->id}/{$filename}";
+            $disk->copy($image->path, $path);
+            $paths[] = $path;
+
+            $copy = $image->replicate(['auction_id', 'filename', 'path']);
+            $copy->forceFill(['auction_id' => $to->id, 'filename' => $filename, 'path' => $path])->save();
+        }
+
+        return $paths;
+    }
+
     private function store(Auction $auction, UploadedFile $file): array
     {
         $extension = match ($file->getMimeType()) {

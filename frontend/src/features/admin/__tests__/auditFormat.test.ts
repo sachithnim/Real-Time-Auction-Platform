@@ -20,6 +20,11 @@ describe('audit log wording', () => {
     expect(view.tone).toBe('warning')
   })
 
+  it('links a relisted auction and its new draft both ways', () => {
+    expect(describeEvent(event('AUCTION_RELISTED', { new_auction_id: 17 })).summary).toBe('Relisted as a new draft, auction #17.')
+    expect(describeEvent(event('AUCTION_CREATED', { title: 'Brass Telescope', relisted_from: 9 })).summary).toBe('Created as a draft "Brass Telescope", relisted from auction #9.')
+  })
+
   it('shows an edit as labelled "old → new" lines', () => {
     const view = describeEvent(event('AUCTION_UPDATED', { changes: { title: { from: 'Antique Brass Telescope', to: 'Antique Brass Telescope 1' } } }))
 
