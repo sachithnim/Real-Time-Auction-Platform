@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\SaveAuctionRequest;
 use App\Http\Resources\Admin\AdminAuctionResource;
 use App\Models\Auction;
 use App\Services\AuctionLifecycleService;
+use App\Services\AuctionRelister;
 use App\Support\ServerTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,6 +73,14 @@ class AuctionController extends Controller
         Gate::authorize('manage', Auction::class);
 
         return $this->respond($this->lifecycle->cancel($auction, $request->user(), $request->validated('reason')));
+    }
+
+    /** A new draft copied from an auction that did not sell. */
+    public function relist(Request $request, Auction $auction, AuctionRelister $relister): JsonResponse
+    {
+        Gate::authorize('manage', Auction::class);
+
+        return $this->respond($relister->relist($auction, $request->user()), 201);
     }
 
     private function respond(Auction $auction, int $status = 200): JsonResponse

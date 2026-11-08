@@ -31,10 +31,11 @@ class AuctionLifecycleService
 
     /**
      * @param  array<string, mixed>  $data  Validated, admin-editable fields (times in UTC).
+     * @param  array<string, mixed>  $eventNote  Extra audit details, e.g. which auction a relist came from.
      */
-    public function create(array $data, User $admin, bool $schedule = false): Auction
+    public function create(array $data, User $admin, bool $schedule = false, array $eventNote = []): Auction
     {
-        return DB::transaction(function () use ($data, $admin, $schedule) {
+        return DB::transaction(function () use ($data, $admin, $schedule, $eventNote) {
             $auction = new Auction($data);
             $auction->forceFill([
                 'status' => AuctionStatus::Draft,
@@ -42,7 +43,7 @@ class AuctionLifecycleService
                 'original_end_at' => $auction->end_at,
             ])->save();
 
-            $this->events->record($auction, AuctionEventType::AuctionCreated, $admin, $this->snapshot($auction));
+            $this->events->record($auction, AuctionEventType::AuctionCreated, $admin, [...$this->snapshot($auction), ...$eventNote]);
 
             if ($schedule) {
                 $this->applySchedule($auction, $admin);

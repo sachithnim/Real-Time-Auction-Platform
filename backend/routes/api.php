@@ -108,6 +108,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('admin')->group(functi
     Route::put('auctions/{auction}', [AdminAuctionController::class, 'update']);
     Route::post('auctions/{auction}/schedule', [AdminAuctionController::class, 'schedule']);
     Route::post('auctions/{auction}/cancel', [AdminAuctionController::class, 'cancel']);
+    Route::post('auctions/{auction}/relist', [AdminAuctionController::class, 'relist']);
     Route::post('auctions/{auction}/images', [AuctionImageController::class, 'store']);
     Route::put('auctions/{auction}/images/order', [AuctionImageController::class, 'reorder']);
     // scopeBindings: the photo must belong to the auction in the URL.
