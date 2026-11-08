@@ -24,6 +24,7 @@ use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\MyBidsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PriceHistoryController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\ScanBiddingActivity;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,7 @@ Route::get('categories', [CategoryController::class, 'index']);
 Route::get('auctions', [AuctionController::class, 'index']);
 Route::get('auctions/{auction}', [AuctionController::class, 'show']);
 Route::get('auctions/{auction}/bids', [BidController::class, 'index']);
+Route::get('auctions/{auction}/price-history', [PriceHistoryController::class, 'show']);
 Route::get('auction-images/{filename}', [AuctionImageFileController::class, 'show'])
     ->where('filename', '[A-Za-z0-9]{40}\.(jpg|png|webp)')
     ->name('auction-images.show');
