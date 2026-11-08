@@ -17,6 +17,7 @@ export function useAuctionChannel(auctionId: number) {
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: auctionKeys.detail(auctionId) })
     queryClient.invalidateQueries({ queryKey: auctionKeys.bids(auctionId) })
+    queryClient.invalidateQueries({ queryKey: auctionKeys.priceHistory(auctionId) })
   }, [auctionId, queryClient])
 
   const status = useRealtimeStatus(refetch)
@@ -50,6 +51,8 @@ export function useAuctionChannel(auctionId: number) {
             queryClient.setQueryData<CursorPage<BidHistoryRow>>(auctionKeys.bids(auctionId), (history) =>
               history && !history.data.some((row) => row.id === bid.id) ? { ...history, data: [bid, ...history.data] } : history,
             )
+            // The chart marks the viewer's own bids, which only the server knows: ask again.
+            queryClient.invalidateQueries({ queryKey: auctionKeys.priceHistory(auctionId) })
           }
         }
       })

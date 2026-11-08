@@ -26,6 +26,7 @@ import { CheckoutPanel } from './CheckoutPanel'
 import { leaderBadge } from './leaderBadge'
 import { MobileBidBar } from './MobileBidBar'
 import { PhotoGallery } from './PhotoGallery'
+import { PriceChart } from './PriceChart'
 import { priceLabel } from './priceLabel'
 import { reserveBadge } from './statusText'
 import { WatchButton } from './WatchButton'
@@ -88,6 +89,7 @@ export function AuctionDetailPage() {
           <Card>
             <p className="whitespace-pre-line text-slate-700">{a.description}</p>
           </Card>
+          <PriceChart auctionId={auctionId} status={a.status} />
           <BidHistory auctionId={auctionId} status={a.status} />
         </div>
 
