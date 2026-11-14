@@ -39,6 +39,7 @@ describe('<PhotoGallery>', () => {
     render(<PhotoGallery images={[images[0]]} title="Brass Telescope" />)
 
     expect(screen.queryByRole('button', { name: 'Next photo' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Full size' })).toHaveAttribute('href', images[0].url)
+    // Full screen still works for one photo (the viewer has its own tests).
+    expect(screen.getByRole('button', { name: 'Full screen' })).toBeInTheDocument()
   })
 })

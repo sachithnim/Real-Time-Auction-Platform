@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react'
 import type { AuctionImage } from '../../types/api'
+import { PhotoViewer } from './PhotoViewer'
 
 const arrowButton =
   'absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#ffffff]/90 text-[#0f172a] shadow ring-1 ring-black/10 transition hover:bg-[#ffffff]'
@@ -10,6 +11,7 @@ const arrowButton =
  */
 export function PhotoGallery({ images, title }: { images: AuctionImage[]; title: string }) {
   const [index, setIndex] = useState(0)
+  const [viewing, setViewing] = useState(false)
 
   if (images.length === 0) {
     return null
@@ -34,7 +36,8 @@ export function PhotoGallery({ images, title }: { images: AuctionImage[]; title:
           alt={`${title}, photo ${current + 1} of ${images.length}`}
           width={image.width}
           height={image.height}
-          className="aspect-[4/3] w-full object-contain"
+          className="aspect-[4/3] w-full cursor-zoom-in object-contain"
+          onClick={() => setViewing(true)}
         />
         {images.length > 1 && (
           <>
@@ -53,14 +56,16 @@ export function PhotoGallery({ images, title }: { images: AuctionImage[]; title:
             </span>
           </>
         )}
-        <a
-          href={image.url}
-          target="_blank"
-          rel="noreferrer"
-          className="absolute top-3 right-3 rounded-full bg-[#ffffff]/90 px-2.5 py-1 text-xs font-medium text-[#0f172a] shadow ring-1 ring-black/10 hover:bg-[#ffffff]"
+        <button
+          type="button"
+          onClick={() => setViewing(true)}
+          className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-[#ffffff]/90 px-2.5 py-1 text-xs font-medium text-[#0f172a] shadow ring-1 ring-black/10 hover:bg-[#ffffff]"
         >
-          Full size
-        </a>
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg>
+          Full screen
+        </button>
       </div>
 
       {/* Padding keeps the selected ring inside the scrolling row, which would clip it. */}
@@ -80,6 +85,7 @@ export function PhotoGallery({ images, title }: { images: AuctionImage[]; title:
           ))}
         </div>
       )}
+      {viewing && <PhotoViewer images={images} index={current} title={title} onIndexChange={setIndex} onClose={() => setViewing(false)} />}
     </section>
   )
 }
