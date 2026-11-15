@@ -112,7 +112,8 @@ export function NotificationBell() {
                           {text.title}
                         </span>
                         <span className="block text-sm text-slate-600">{text.body}</span>
-                        <time dateTime={notice.at} className="mt-0.5 block text-xs text-slate-500">
+                        {/* slate-600: slate-500 is just under 4.5:1 on an unread row's tinted background. */}
+                        <time dateTime={notice.at} className="mt-0.5 block text-xs text-slate-600">
                           {when}
                         </time>
                       </span>
