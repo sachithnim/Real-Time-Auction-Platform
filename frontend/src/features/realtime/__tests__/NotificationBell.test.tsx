@@ -60,10 +60,10 @@ describe('<NotificationBell>', () => {
     renderBell()
 
     await user.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }))
-    const menu = screen.getByRole('menu', { name: 'Notifications' })
+    const panel = screen.getByRole('dialog', { name: 'Notifications' })
 
-    expect(within(menu).getByRole('menuitem', { name: /^Unread: Outbid on Brass Telescope\. Price is now Rs\. 15,500\. Bid Rs\. 16,000 to lead again\. / })).toBeInTheDocument()
-    expect(within(menu).getByRole('menuitem', { name: /^You won! Pocket Watch for Rs\. 59,000\./ })).toBeInTheDocument()
+    expect(within(panel).getByRole('button', { name: /^Unread: Outbid on Brass Telescope\. Price is now Rs\. 15,500\. Bid Rs\. 16,000 to lead again\. / })).toBeInTheDocument()
+    expect(within(panel).getByRole('button', { name: /^You won! Pocket Watch for Rs\. 59,000\./ })).toBeInTheDocument()
   })
 
   it('opening a notice marks it read and goes to the auction', async () => {
@@ -71,7 +71,7 @@ describe('<NotificationBell>', () => {
     const router = renderBell()
 
     await user.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }))
-    await user.click(screen.getByRole('menuitem', { name: /Outbid on Brass Telescope/ }))
+    await user.click(screen.getByRole('button', { name: /Outbid on Brass Telescope/ }))
 
     expect(markNoticeRead).toHaveBeenCalledWith('a1')
     expect(router.state.location.pathname).toBe('/auctions/7')

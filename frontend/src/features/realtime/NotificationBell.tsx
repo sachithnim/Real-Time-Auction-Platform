@@ -59,6 +59,8 @@ export function NotificationBell() {
       <button
         ref={buttonRef}
         {...buttonProps}
+        // A small panel with a list and a button, not a menu of commands.
+        aria-haspopup="dialog"
         onClick={toggle}
         aria-label={label}
         className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100 hover:text-slate-900"
@@ -74,7 +76,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div id={menuId} role="menu" aria-label="Notifications" className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg bg-white shadow-lg ring-1 ring-slate-200">
+        <div id={menuId} role="dialog" aria-label="Notifications" className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg bg-white shadow-lg ring-1 ring-slate-200">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
             <p className="text-sm font-semibold text-slate-900">Notifications</p>
             {unread > 0 && (
@@ -99,7 +101,6 @@ export function NotificationBell() {
                   <li key={notice.id}>
                     <button
                       type="button"
-                      role="menuitem"
                       onClick={() => openNotice(notice)}
                       // Spoken as one clear sentence; the visible lines would otherwise run together.
                       aria-label={`${notice.read ? '' : 'Unread: '}${sentence(text.title)} ${text.body} ${when}.`}
