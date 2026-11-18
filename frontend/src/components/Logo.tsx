@@ -13,7 +13,9 @@ export function Logo({ size = 'md', tone = 'default' }: { size?: 'md' | 'lg'; to
   return (
     <span className="flex items-center gap-2">
       <img src="/logo.png" alt="" className={`${image} shrink-0 object-contain`} />
-      <span className={`${text} font-bold tracking-tight`}>
+      {/* A wordmark, read as one name. As a logotype it keeps the brand orange: WCAG's
+          contrast rule does not apply to text that is part of a logo. */}
+      <span role="img" aria-label="LiveBid" className={`${text} font-bold tracking-tight`}>
         <span className={live}>Live</span>
         <span className={bid}>Bid</span>
       </span>
